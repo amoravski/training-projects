@@ -1,1 +1,6 @@
-/var/www/html/wp-content/plugins/simple_map/cred.php
+<?php
+$username="wpuser";
+$password="strongpassword";
+$database="wordpress";
+$table="meteors";
+?>
