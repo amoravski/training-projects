@@ -1,0 +1,1 @@
+/var/www/html/wp-content/plugins/simple_map/cred.php
