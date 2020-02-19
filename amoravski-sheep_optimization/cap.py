@@ -21,19 +21,6 @@ def min_capacity(N, K):
             break
         capacity += 1
     return capacity
-
-N1 = [26,7,10,30,5,4]
-K1 = 2
-#print(min_capacity(N1,K1))
-
-N2 = [4,8,15,16,23,42]
-K2 = 2
-#print(min_capacity(N2,K2))
-
-N3 = [666000,42000,7000,13000,400000,511000,600000,200000,202000,111000,313000,94000,280000,72000,42000]
-K3 = 3
-#print(min_capacity(N3,K3))
-
 first_row = input().split(' ')
 second_row = input().split(' ')
 try:
