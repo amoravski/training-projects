@@ -9,25 +9,27 @@
 <div id="filters">
   <label for="population">Population filter:</label>
   <input type="number" id="population" name="population" value="0" min="0" max="100000000000">
-  <label for="lng1">Lower left Corner lng,lat:</label>
-  <input type="number" id="lng1" name="lng1" min="-150" max="150">
+  <label for="lat1">Lower left Corner lat,lng:</label>
   <input type="number" id="lat1" name="lat1" min="-150" max="150">
-  <label for="lng2">Upper Right Corner lng,lat:</label>
-  <input type="number" id="lng2" name="lng2" min="-150" max="150">
+  <input type="number" id="lng1" name="lng1" min="-150" max="150">
+  <label for="lat2">Upper Right Corner lat,lng:</label>
   <input type="number" id="lat2" name="lat2" min="-150" max="150">
+  <input type="number" id="lng2" name="lng2" min="-150" max="150">
   <button onclick="initMap()">Apply</button> 
 </div>
 <script>
   var map;
+  var infowindow;
   function getData() {
+    var population_value = document.getElementById("population").value ? document.getElementById("population").value : 0;
     var xmlhttp = new XMLHttpRequest();
     xmlhttp.open("POST", "http://localhost/blog/wp-content/plugins/simple_map/dump_markers_DOM.php", false);
     xmlhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
     if(document.getElementById("lat1").value && document.getElementById("lng1").value &&document.getElementById("lat2").value && document.getElementById("lng2").value) {
-      xmlhttp.send("population=" + document.getElementById("population").value + "&lat1=" + document.getElementById("lat1").value + "&lng1=" + document.getElementById("lng1").value + "&lat2=" + document.getElementById("lat2").value + "&lng2=" + document.getElementById("lng2").value);
+      xmlhttp.send("population=" + population_value + "&lat1=" + document.getElementById("lat1").value + "&lng1=" + document.getElementById("lng1").value + "&lat2=" + document.getElementById("lat2").value + "&lng2=" + document.getElementById("lng2").value);
     }
     else {
-      xmlhttp.send("population=" + document.getElementById("population").value);
+      xmlhttp.send("population=" + population_value);
     }
     var result;
     if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
@@ -40,16 +42,23 @@
   function initMap() {
     var xml = getData();
     var data = Array.from(xml.getElementsByTagName('tbl_master_property')[0].children);
-    console.log(data);
+    infowindow = new google.maps.InfoWindow();
     map = new google.maps.Map(document.getElementById('map'), {
       center: {lat: 0, lng: 0},
       zoom: 3        });
     for (var i = 0; i < data.length; i++) {
       var myLatLng = {lat: parseFloat(data[i].attributes.lat.nodeValue), lng: parseFloat(data[i].attributes.lng.nodeValue)};
+      console.log(data[i].attributes);
       var marker = new google.maps.Marker({
         position: myLatLng,
         map: map,
-        title: data[i].attributes.name.nodeValue
+        title: data[i].attributes.name.nodeValue,
+        population: data[i].attributes.population.nodeValue
+      });
+      google.maps.event.addListener(marker, 'click', function(){
+        infowindow.close(); // Close previously opened infowindow
+        infowindow.setContent(`<div id="infowindow">TITLE: ${this.title}</br>LATLNG:${this.position}</br>POPULATION: ${this.population}</div>`);
+        infowindow.open(map, this);
       });
       }
   }
