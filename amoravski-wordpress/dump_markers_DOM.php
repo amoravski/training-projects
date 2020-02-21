@@ -6,7 +6,17 @@
     $dbname =   'wordpress';
     $db =   new mysqli( $dbhost, $dbuser, $dbpwd, $dbname );
 
-    $sql="select * from $table;";
+    $population = 0;
+    if(array_key_exists("population",$_POST)) {
+        $population = $_POST["population"];
+    }
+    
+    if(array_key_exists("lat1",$_POST)) {
+        $sql="select * from $table where lat > $_POST[lat1] AND lat < $_POST[lat2] AND lng > $_POST[lng1] AND lng < $_POST[lng2] AND population > $population";
+    }
+    else {
+        $sql="select * from $table where population > $population";
+    }
     $result=$db->query( $sql );
 
     $attribs=array('name','lat','lng');
