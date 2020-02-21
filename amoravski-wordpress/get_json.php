@@ -22,12 +22,13 @@ foreach ($countries as $country) {
     $query = '';
     for($x=0; $x < sizeof($decoded_json); $x++) {
         if($query == ''){
-            $query .= "INSERT INTO $table (geonameid, name,lat,lng,population)
+            $query .= "INSERT INTO $table (geonameid, name,lat,lng,countryName,population)
                    VALUES (".
                     $decoded_json[$x]['geonameId'].",
                    '".mysqli_real_escape_string($connection,$decoded_json[$x]['name'])."',
                    '".$decoded_json[$x]['lat']."',
                    '".$decoded_json[$x]['lng']."',
+                   '".$decoded_json[$x]['countryName']."',
                    ".$decoded_json[$x]['population']."),";
         }
         else {
@@ -35,11 +36,12 @@ foreach ($countries as $country) {
                    '".mysqli_real_escape_string($connection,$decoded_json[$x]['name'])."',
                    '".$decoded_json[$x]['lat']."',
                    '".$decoded_json[$x]['lng']."',
+                   '".$decoded_json[$x]['countryName']."',
                    ".$decoded_json[$x]['population']."),";
         }
     }
     if($query != '') {
-        $query = rtrim($query, ",") . " ON DUPLICATE KEY UPDATE name=VALUES(name), lat=VALUES(lat), lng=VALUES(lng), population=VALUES(population);";
+        $query = rtrim($query, ",") . " ON DUPLICATE KEY UPDATE name=VALUES(name), lat=VALUES(lat), lng=VALUES(lng), population=VALUES(population), countryName=VALUES(countryName);";
         mysqli_query($connection, $query) or die("MySQL Error: " . mysqli_error($connection));
     }
     mysqli_close($connection);

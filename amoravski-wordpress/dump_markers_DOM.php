@@ -12,7 +12,7 @@
     }
     
     if(array_key_exists("lat1",$_POST)) {
-        $sql="select * from $table where lat > $_POST[lat1] AND lat < $_POST[lat2] AND lng > $_POST[lng1] AND lng < $_POST[lng2] AND population > $population";
+        $sql="select * from $table where lat >= $_POST[lat1] AND lat <= $_POST[lat2] AND lng >= $_POST[lng1] AND lng <= $_POST[lng2] AND population >= $population";
     }
     else {
         $sql="select * from $table where population > $population";
