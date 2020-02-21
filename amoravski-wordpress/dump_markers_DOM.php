@@ -18,8 +18,7 @@
         $sql="select * from $table where population > $population";
     }
     $result=$db->query( $sql );
-
-    $attribs=array('name','lat','lng');
+    $attribs=array('name','lat','lng', 'population');
 
     $dom=new DOMDocument('1.0','utf-8');
     $dom->formatOutput=true;
