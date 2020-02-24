@@ -1,4 +1,5 @@
 import xlrd
+
 def get_values_from_spreadsheet(path):
     workbook = xlrd.open_workbook(path)
     worksheet = workbook.sheet_by_index(0)
@@ -11,8 +12,9 @@ def get_values_from_spreadsheet(path):
         values.append(col_value)
     return values
 
-for row in get_values_from_spreadsheet('Ek_atte.xlsx'):
-    print(row['name'])
-
-for row in get_values_from_spreadsheet('Ek_atte.xlsx'):
-    print(row['name'])
+def get_obl_from_obst(values):
+    reg = get_values_from_spreadsheet("Ek_atte.xlsx")
+    for row in values:
+        print("we did it")
+        row['oblast'] = [x['oblast'] for x in reg if x['ekatte']==row['ekatte']][0]
+    return values;
