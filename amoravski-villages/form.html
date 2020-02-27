@@ -1,21 +1,78 @@
 <!DOCTYPE html>
 <html>
   <head>    
+      <meta http-equiv=Content-Type content="text/html; charset=UTF-8">
   </head>
   <body>
-    <input type="button" id='script' name="scriptbutton" value=" RUN form" onclick="goPython()">
+    <input type="text" id='filter' name="filter">
+    <input type="button" id='script' name="scriptbutton" value="RUN form" onclick="goPython()">
+    <div id='stats'>
+        <div id='villages'>
+        </div>
+        <div id='obstina'>
+        </div>
+        <div id='oblast'>
+        </div>
+    </div>
+    <table border='1' id='villages'>
+        <tbody>
+        </tbody>
+    </table>
 
     <script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 
     <script>
+        function initTable() {
+
+            table = document.getElementsByTagName("tbody")[0];
+            while(table.hasChildNodes())
+            {
+                   table.removeChild(table.firstChild);
+            }
+            var namesRow = { name: "Name", obstina: "Obstina", oblast: "Oblast"}
+            addRow(namesRow)
+        }
+        function addRow(data){
+             tabBody=document.getElementsByTagName("tbody").item(0);
+             row=document.createElement("tr");
+             cell1 = document.createElement("td");
+             cell2 = document.createElement("td");
+             cell3 = document.createElement("td");
+             textnode1=document.createTextNode(data.name);
+             textnode2=document.createTextNode(data.obstina);
+             textnode3=document.createTextNode(data.oblast);
+             cell1.appendChild(textnode1);
+             cell2.appendChild(textnode2);
+             cell3.appendChild(textnode3);
+             row.appendChild(cell1);
+             row.appendChild(cell2);
+             row.appendChild(cell3);
+             tabBody.appendChild(row);
+        }
         function goPython(){
+            var filter = document.getElementById("filter").value ? "?filter=" + document.getElementById("filter").value : "";
+            initTable();
+            goPythonTwo();
             $.ajax({
-              url: "postgre_get_villages.py",
-             context: document.body
-            }).done(function() {
-             alert('finished python script');;
+              url: "cgi-bin/get_villages.py" + filter,
+             context: document.body,
+             crossDomain: true,
+            }).done(function(data) {
+                for (i=0; i<Object.keys(data).length; i++) {
+                    addRow(data[i]);
+                }
+            });
+        }
+        function goPythonTwo(){
+            $.ajax({
+              url: "cgi-bin/get_statistics.py",
+             context: document.body,
+             crossDomain: true,
+            }).done(function(data) {
+                $('#villages').html("Villages:"+ data.villages);
+                $('#obstina').html("Obstini:"+ data.municipality);
+                $('#oblast').html("Oblast:"+ data.region);
             });
         }
     </script>
-  </body>
 </html>
