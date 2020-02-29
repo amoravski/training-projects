@@ -35,6 +35,7 @@ def calc_least_edges(rows,size):
 def dist(p1,p2):
     return math.sqrt(pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2))
 
+# Main code
 size_raw = input()
 try:
     size = int(size_raw)
@@ -58,17 +59,3 @@ else:
         print("Circle data improper!")
     else:
         calc_least_edges(rows,size)
-
-
-def bfs(visited, graph, node):
-  visited.append(node)
-  queue.append(node)
-
-  while queue:
-    s = queue.pop(0) 
-    print (s, end = " ") 
-
-    for neighbour in graph[s]:
-      if neighbour not in visited:
-        visited.append(neighbour)
-        queue.append(neighbour)
