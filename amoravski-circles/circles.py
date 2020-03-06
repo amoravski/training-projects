@@ -1,4 +1,5 @@
 import math
+import matplotlib.pyplot as plt
 from collections import defaultdict
 from collections import deque
 
@@ -35,6 +36,15 @@ def calc_least_edges(rows,size):
 def dist(p1,p2):
     return math.sqrt(pow(p1[0]-p2[0],2) + pow(p1[1]-p2[1],2))
 
+def draw_circles(circles):
+    fig, ax = plt.subplots()
+    ax.set_xlim((-10,10))
+    ax.set_ylim((-10,10))
+    for circle in circles:
+        circle_plot = plt.Circle((circle[0],circle[1]),circle[2], fill = False, facecolor= None)
+        ax.add_artist(circle_plot)
+    fig.savefig('plotcircles.png')
+
 # Main code
 size_raw = input()
 try:
@@ -58,4 +68,5 @@ else:
     except ValueError:
         print("Circle data improper!")
     else:
+        draw_circles(rows)
         calc_least_edges(rows,size)
