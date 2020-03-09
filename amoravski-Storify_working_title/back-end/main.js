@@ -1,17 +1,13 @@
 const Koa = require('koa');
+const koaBody = require('koa-body');
+const koaCors = require('@koa/cors');
 const router = require('koa-router');
-const bodyParser = require('koa-body');
 const product = require('./products.js');
 
 const app = new Koa();
 
-//app.use(bodyParser({
-//    formidable:{uploadDir: './uploads'},
-//    multipart: true,
-//    urlencoded: true
-//}));
-
-
+app.use(koaBody());
+app.use(koaCors());
 app.use(product.routes());
 app.use(product.allowedMethods());
 

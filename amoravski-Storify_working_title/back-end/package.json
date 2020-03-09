@@ -4,6 +4,7 @@
   "description": "Making shopping easy",
   "main": "main.js",
   "dependencies": {
+    "@koa/cors": "^3.0.0",
     "koa": "^2.11.0",
     "koa-body": "^4.1.1",
     "koa-router": "^8.0.8",
