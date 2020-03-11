@@ -148,7 +148,7 @@ async function add_tags(values_tags, pool, product_id) {
 async function remove_product(params) {
     const pool = new Pool(config);
     await pool.query('DELETE FROM tags WHERE product=$1;',[params.id])
-    result = await pool.query(`DELETE FROM products WHERE id='${params.id}';`);
+    result = await pool.query(`DELETE FROM products WHERE id=$1;`, [params.id]);
 }
 
 module.exports.get_products = get_products;
