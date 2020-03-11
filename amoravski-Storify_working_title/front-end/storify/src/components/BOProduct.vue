@@ -1,15 +1,15 @@
 <template>
-  <span>
+  <div class="product">
     <h3>{{ product.name }}</h3>
     <p>
-      Tag: {{ product.tag }}
-      Quantity: {{ product.quantity }}
-      Price: {{ product.price }} лв.
+      <b>Tags:</b> {{ tagsList() }}
+      <b>Quantity:</b> {{ product.quantity }}
+      <b>Price:</b> {{ product.price }} лв.
     </p>
     <button v-on:click="removed" >Remove</button>
-    <button v-on:click="updateActive" >Update</button>
+    <button v-on:click="updateActive" >{{formActive ? "Close Form" : "Update"}}</button>
     <BOUpdateProductForm @update="updated" v-if="formActive" :product="product" @close="formActive = false"/>
-  </span>
+  </div>
 </template>
 
 <script>
@@ -20,7 +20,7 @@ export default {
   props: [ 'product' ],
   components: { BOUpdateProductForm },
   data () {
-    return { formActive: null };
+    return { formActive: false };
   },
   methods:
   {
@@ -28,12 +28,20 @@ export default {
       this.$emit('removed', this.product.id);
     },
     updated (event) {
-      console.log(event)
       this.$emit('updated', event);
       this.formActive = false;
     },
     updateActive () {
-      this.formActive = true;
+      this.formActive = !this.formActive;
+    },
+    tagsList () {
+      var tags = '';
+      for(var i=0; i<this.product.tags.length; i++) {
+        tags += this.product.tags[i];
+        tags += ','
+      }
+      tags = tags.substring(0, tags.length -1);
+      return tags;
     }
   }
 }

@@ -1,11 +1,11 @@
 <template>
   <div id="app">
-    <p>
-      <router-link to="/products">Client products</router-link>
-    </p>
-    <p>
-      <router-link to="/boproducts">Admin products</router-link>
-    </p>
+    <header>
+    <h1>Storify</h1>
+    <hr>
+      <router-link tag="button" class="router_link" to="/products">Client products</router-link> 
+      <router-link tag="button" class="router_link" to="/boproducts">Admin products</router-link>
+    </header>
     <router-view></router-view>
   </div>
 </template>
@@ -16,14 +16,3 @@ export default {
   name: 'App',
 }
 </script>
-
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>

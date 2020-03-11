@@ -1,21 +1,37 @@
 <template>
   <div id="products">
-      <h1>Product List</h1>
-      <label for="filter">Filter: <br/></label>
-      <input v-model="filter" type="text" id="filter"/>
-      <br/>
-      <label for="lower-price">Lower bound price: <br/></label>
+      <h2>Product List</h2>
+      <p>
+      <button v-on:click="triggerFilters">Filters</button>
+      </p>
+      <div v-if="filters" class="bordered">
+
+      <p>
+      <label for="lower-price">Lower bound price:</label>
       <input v-model="lowerPrice" type="number" id="lower-price"/>
-      <br/>
-      <label for="upper-price">Upper bound price: <br/></label>
+    </p>
+      <p>
+      <label for="upper-price">Upper bound price:</label>
       <input v-model="upperPrice" type="number" id="upper-price"/>
-      <br/>
-      <button v-on:click="search">Search</button><br/>
+    </p>
+      <p>
       <button v-on:click="sortProductsNameAscending">Ascending name</button>
-      <button v-on:click="sortProductsNameDescending">Descending name</button><br/>
+      <button v-on:click="sortProductsNameDescending">Descending name</button>
+    </p>
+      <p>
       <button v-on:click="sortProductsPriceAscending">Ascending price</button>
-      <button v-on:click="sortProductsPriceDescending">Descending price</button><br/>
-      <Product v-for="product in products" v-bind:key="product.id" v-bind:product=product />
+      <button v-on:click="sortProductsPriceDescending">Descending price</button>
+    </p>
+      </div>
+      <p>
+        <label for="filter"><b>Filter: </b></label>
+        <input v-model="filter" type="text" id="filter"/>
+      </p>
+      <button v-on:click="search">Search</button>
+
+      <div class="products">
+        <Product @bought="buyProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product />
+      </div>
       <h3 v-if="empty">None found! :(</h3>
   </div>
 </template>
@@ -28,7 +44,7 @@ export default {
   name: 'Products',
   components: {Product},
   data () {
-    return { products : [], filter : "", empty: false, lowerPrice: 0, upperPrice: 0}
+    return { products : [], filter : "", empty: false, lowerPrice: 0, upperPrice: 0, filters: false}
   },
   mounted () {
     this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
@@ -36,6 +52,9 @@ export default {
   methods: {
     search: function () {
       this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
+    },
+    triggerFilters: function () {
+      this.filters = !this.filters;
     },
     getProducts: function (name, tag, lowerPrice, upperPrice) {
       var url = "http://localhost:3000/product"
@@ -48,7 +67,7 @@ export default {
         url += appended ? `&tag=${tag}` : `?tag=${tag}`
         appended = true
       }
-      if (upperPrice > 0){
+      if (upperPrice > 0 && this.filters){
         url += appended ? `&lowerPrice=${lowerPrice}&upperPrice=${upperPrice}` : `?lowerPrice=${lowerPrice}&upperPrice=${upperPrice}`
         appended = true
       }
@@ -100,6 +119,9 @@ export default {
      }
      this.products = this.products.sort(comparePriceDescending);
     },
+    buyProduct: function (event) {
+      console.log(event);
+    }
   }
 }
 

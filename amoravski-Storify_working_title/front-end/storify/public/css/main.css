@@ -1,0 +1,55 @@
+html {
+ background-color:#fefefe
+}
+body {
+ font-family:Open Sans,Arial;
+ color:#454545;
+ font-size:16px;
+ margin:2em auto;
+ max-width:800px;
+ padding:1em;
+ line-height:1.4;
+ text-align:justify
+}
+.product {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 20px 20px;
+  margin: 10px;
+}
+
+.bordered {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 20px 20px;
+  margin: 10px;
+}
+
+.products {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  align-content: flex-start;
+}
+
+button {
+  background-color: transparent;
+  border: solid 1px transparent;
+  border-radius:4px;
+  margin-top: 1.5rem;
+  padding: 0.5em 1em;
+  background-color: #454545;
+  color: #ffffff;
+}
+
+button:hover {
+    color: #454545;
+    border-color: currentColor;
+    background-color:white;
+}
+
+button:active {
+    color: #454545;
+    border-color: currentColor;
+    background-color:grey;
+}
