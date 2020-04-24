@@ -30,7 +30,6 @@
       <p>
       <button v-on:click="search">Search</button>
       </p>
-
       <p>
       <button v-if="!newForm" v-on:click="newFormButton">New Product</button>
       </p>
@@ -38,9 +37,25 @@
       <button v-if="newForm" v-on:click="newFormButton">Close Form</button>
       </p>
       <BONewProductForm v-if="newForm" @created="createProduct" />
-      <div class="products">
-      <BOProduct @updated="updateProduct" @removed="removeProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product />
-      </div>
+        <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th v-on:click="sortProductsNameAlternating">Name</th>
+                <th v-on:click="sortProductsPriceAlternating">Price</th>
+                <th>Quantity</th>
+                <th>Tags</th>
+                <th></th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <BOProduct @updated="updateProduct" @removed="removeProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product />
+            </tbody>
+        </table>
+        <button v-if="page" v-on:click="goBackwardsPage">&lt;</button>
+        <button>{{ page+1 }}</button>
+        <button v-if="(page+1)*10 < count" v-on:click="goForwardsPage">&gt;</button>
       <h3 v-if="empty">None found! :(</h3>
   </div>
 </template>
@@ -54,21 +69,22 @@ export default {
   name: 'BOProducts',
   components: {BOProduct, BONewProductForm},
   data () {
-    return { products : [], filter : "", empty: false, newForm: false, lowerPrice: 0, upperPrice: 0, filters: false}
+    return { products : [], filter : "", empty: false, newForm: false, lowerPrice: 0, upperPrice: 0, filters: false, nameSort: true, priceSort: true, page: 0, count:0}
   },
   mounted () {
     this.getProducts('','');
   },
   methods: {
     search: function () {
+      this.page = 0
       this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
     },
     triggerFilters: function () {
       this.filters = !this.filters;
     },
     getProducts: function (name, tag, lowerPrice, upperPrice) {
-      var url = "http://localhost:3000/product"
-      var appended = false
+      var url = `http://localhost:3000/product?offset=${this.page*5}&limit=10`
+      var appended = true
       if (name) {
         url += appended ? `&name=${name}` : `?name=${name}`
         appended = true
@@ -82,7 +98,9 @@ export default {
         appended = true
       }
       axios({ method:"GET", "url": url}).then(result => {
-        this.products = JSON.parse(JSON.stringify(result.data.json)).products;
+        var parsed = JSON.parse(JSON.stringify(result.data));
+        this.products = parsed.products; 
+        this.count = parsed.count; 
         if(this.products.length == 0) {
           this.empty= true;
         }
@@ -92,6 +110,16 @@ export default {
       }, error => {
         console.log(error);
       });
+    },
+    sortProductsNameAlternating: function () {
+      if(this.nameSort) {
+        this.nameSort = false;
+        this.sortProductsNameAscending();
+        return
+      }
+      this.nameSort = true;
+      this.sortProductsNameDescending();
+      return
     },
     sortProductsNameAscending: function () {
      function compareNameAscending(a, b) {
@@ -104,6 +132,16 @@ export default {
         return (b.name).localeCompare(a.name);
      }
      this.products = this.products.sort(compareNameDescending);
+    },
+    sortProductsPriceAlternating: function () {
+      if(this.priceSort) {
+        this.priceSort = false;
+        this.sortProductsPriceAscending();
+        return
+      }
+      this.priceSort = true;
+      this.sortProductsPriceDescending();
+      return
     },
     sortProductsPriceAscending: function () {
      function comparePriceAscending(a, b) {
@@ -156,6 +194,16 @@ export default {
       , error => {
         console.log(error);
       });
+    },
+    goForwardsPage: function() {
+      this.page++;
+      this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
+    },
+    goBackwardsPage: function() {
+      if(this.page>0) {
+        this.page--;
+        this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
+      }
     }
   }
 }
