@@ -9,13 +9,13 @@
 
       <!-- Buttons -->
       <td v-if="!updateFormActive" >
-        <button v-on:click="removed" >
+        <button style="background-color: red" v-on:click="removed" >
           Remove
         </button>
       </td>
       <td>
-        <button v-on:click="toggleUpdateForm" >
-          {{updateFormActive ? "Close Form" : "Update"}}
+        <button style="background-color: green" v-on:click="toggleUpdateForm" >
+          {{updateFormActive ? "Close Form" : "Edit"}}
         </button>
       </td>
 

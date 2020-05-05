@@ -1,6 +1,6 @@
 <template>
   <div id="newProduct">
-    <form @submit.prevent="submit" ref="form">
+    <form style="width:10rem;" @submit.prevent="submit" ref="form">
         <label for="quantity">Quantity:</label>
         <input name="quantity" type="number" v-model="product_buy.quantity" id="quantity" min=1>
         <input type="submit" value="Add to cart">
@@ -15,10 +15,8 @@ export default {
   data () { 
     return {
       product_buy: {
-        id: this.product.id,
-        quantity: 1,
-        name: this.product.name,
-        price: this.product.price
+        product_id: this.product.id,
+        quantity: 1
       },
       errors: [],
     }

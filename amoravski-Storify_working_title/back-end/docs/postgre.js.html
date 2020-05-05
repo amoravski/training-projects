@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: postgre.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: postgre.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview Controls all postgre specific code
+ */
+
+
+const { Client, Pool } = require('pg');
+
+
+//TO-DO: Export to ini file
+const config = {
+    user: 'amoravski',
+    database: 'store',
+    max: 10,
+    password: 'strongboie',
+    idleTimeoutMillis: 30000
+};
+
+
+/**
+ * Retrieves an ordered and filtered list of products
+ * @param {String} id : If present, filters by id
+ * @param {String} name : If present, filters by name
+ * @param {String} tag : If present, filters by tags
+ * @param {String} lowerPrice : If present, sets a lower price bound
+ * @param {String} upperPrice : If present, sets a upper price bound
+ * @param {String} sort : If present, selects by which field to sort (name, price, etc.)
+ * @param {String} ord : If present, returns records ascended/descended
+ * @param {Integer} limit : If present, only returns that many rows
+ * @param {Integer} offset : If present, offsets returned rows
+ * @return {Object} : Object with field products (restricted by LIMIT) and field count(all products matching the query)
+ */
+async function get_products(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset) {
+    // Connect to DB
+    const pool = new Pool(config);
+
+    // Build up the formatted query
+    let query_string = 'SELECT products.id,products.name,products.price,products.quantity,json_agg(tag_names.tag_name),products.created_at,products.picture_path FROM products INNER JOIN tags ON products.id = tags.product LEFT OUTER JOIN tag_names ON tags.tag_name = tag_names.id WHERE products.status &lt;> \'removed\' ';
+
+    //Flag to control if AND was appended already
+    let appended = false;
+    //Flag to control if and when braces are appended
+    let or_brace_flag = false;
+
+    // List of args to be passed to formatted query
+    let args = [];
+    // Number of current arg
+    let arg = 1;
+
+    // Name filtering
+    if(name){
+        if(!appended) {
+            query_string += ` AND`;
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` products.name ILIKE '%' || $${arg} || '%'`;
+            appended = true;
+            or_brace_flag = true;
+        }
+        else {
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` OR products.name ILIKE '%' || $${arg} || '%'`;
+            or_brace_flag = true;
+        }
+        arg++;
+        args.push(name);
+    }
+
+    // Tag filtering
+    if(tag) {
+        if(!appended) {
+            query_string += ` AND`;
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` tag_names.tag_name ILIKE '%' || $${arg} || '%'`;
+            appended = true;
+            or_brace_flag = true;
+        }
+        else {
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` OR tag_names.tag_name ILIKE '%' || $${arg} || '%'`;
+            or_brace_flag = true;
+        }
+        arg++;
+        args.push(tag);
+    }
+
+    // Price Upper and Lower Bound filtering
+    if(lowerPrice) {
+        if(!appended) {
+            query_string += ` WHERE products.price > $${arg}`;
+            appended = true;
+        }
+        else {
+            query_string += or_brace_flag ? ')' : '';
+            query_string += ` AND products.price > $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(lowerPrice);
+    }
+    if(upperPrice) {
+        if(!appended) {
+            query_string += ` WHERE products.price &lt; $${arg}`;
+            appended = true;
+        }
+        else {
+            or_brace_flag += or_brace_flag ? ')' : '';
+            query_string += ` AND products.price &lt; $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(upperPrice);
+    }
+
+    // Closes brackets if they were still open
+    query_string += or_brace_flag ? ')' : '';
+
+    // For grouping tags
+    query_string += ` GROUP BY products.id`;
+
+    // Ordering
+    query_string += ` ORDER BY `;
+    switch(sort) {
+        case 'id':
+            query_string+=('products.id');
+            break;
+        case 'name':
+            query_string+=('products.name');
+            break;
+        case 'price':
+            query_string+=('products.price');
+            break;
+        case 'quantity':
+            query_string+=('products.quantity');
+            break;
+        case 'timestamp':
+            query_string+=('products.created_at');
+            break;
+        default:
+            query_string+=('products.name');
+    }
+    if(ord=="asc") {
+        query_string += ' DESC';
+    }
+    else if(ord=="desc") {
+        query_string += ' ASC';
+    }
+
+    // Duplicates current args and string before appending limit
+    // So as to allow returing count of records in seperate request
+    count_string = query_string;
+    args_count = args.slice();
+    
+    // Limit number of records
+    if(limit) {
+        args.push(limit);
+        query_string += ` LIMIT $${arg}`;
+        arg++;
+    }
+
+    // Offset records
+    if(offset) {
+        args.push(offset);
+        query_string += ` OFFSET $${arg}`;
+        arg++;
+    }
+    query_string += ';';
+
+    // Make queries
+    response = await pool.query(query_string, args);
+    response_count = await pool.query(count_string, args_count);
+    output = response.rows;
+    count = response_count.rows.length;
+
+    //Close connection
+    pool.end();
+
+    // Build up response object
+    products = [];
+    for(let i=0; i &lt; output.length; i++) {
+        products.push({id: output[i].id, name: output[i].name, price: output[i].price, quantity: output[i].quantity, created_at: output[i].created_at, tags: output[i].json_agg, picture_path: 'http://localhost:3000/' + output[i].picture_path.split('/')[1]});
+    }
+
+    return {status: "ok", products: products, count: count};
+}
+
+
+/**
+ * Creates a new product
+ * @param {String} name : Name of product, required
+ * @param {String} price : Price of product, required
+ * @param {String} quantity : Quantity of product, required
+ * @param {String} file_path : Path to picture of product, required
+ * @param {JSON} tags : List of tags
+ * @return {Object} : Result object
+ */
+async function create_product(name,price,quantity,file_path,tags) {
+    //Open connection
+    const pool = new Pool(config);
+
+    //TO-DO: Replace placeholder ID when accounts are added
+    let added_by = 2;
+
+    //Get current moment in epoch
+    let created_at = Math.floor(new Date() / 1000);
+
+    response = await pool.query(`INSERT INTO products (name, price, quantity, added_by, created_at, picture_path) VALUES ($1, $2, $3, $4,to_timestamp($5), $6) RETURNING id;`, [name,price,quantity,added_by,created_at,file_path]);
+    product_id = response.rows[0].id;
+
+    await add_tags(JSON.parse(params.tags), pool, product_id);
+
+    //Close connection
+    pool.end();
+    return {status:"ok", id:product_id};
+}
+
+
+/**
+ * Updates a product
+ * @param {Integer} id : Product to be changed, required
+ * @param {String} name : Name to be changed to, required
+ * @param {Integer} price : Price to be changed to, required
+ * @param {Integer} quantity : Quantity to be changed to, required
+ * @param {JSON} tags : Tags to be changed to, required
+ * @param {String} file_path : Path to picture to be changed to, required
+ * @return {Object} : Result object
+ */
+async function update_product(id,name,price,quantity,file_path,tags) {
+    // Connect to DB
+    const pool = new Pool(config);
+
+    const response = await pool.query(`UPDATE products SET name=$1,price=$2,quantity=$3,picture_path=$4 WHERE id=$5;`, [name,price,quantity,files.file.path,id]);
+    const tag_response = await pool.query('DELETE FROM tags WHERE product=$1',[id])
+
+    await add_tags(JSON.parse(tags), pool, id);
+
+    // Close connection
+    pool.end()
+    return {status: 'ok'};
+}
+
+
+/**
+ * Adds tags, if they don't exist in table makes entries for them
+ * @param {List} values_tags : tag names to be added
+ * @param {Connection} pool : connection to postgre db
+ * @param {Integer} product_id : Id to associate tags with
+ * @return {Object} : Result message
+ */
+async function add_tags(values_tags, pool, product_id) {
+    values_tag_names = [];
+
+    tags_query = '';
+    tags_query_select = '';
+    for(let i=0; i &lt; values_tags.length; i++) {
+        tags_query += `($${i+1}),`
+        tags_query_select += `$${i+1},`;
+    }
+    tags_query = tags_query.substring(0, tags_query.length - 1);
+    tags_query_select = tags_query_select.substring(0, tags_query_select.length - 1);
+    await pool.query(`INSERT INTO tag_names (tag_name) VALUES ${tags_query} ON CONFLICT DO NOTHING;`, values_tags);
+    tag_resp = await pool.query(`SELECT id,tag_name FROM tag_names WHERE tag_name IN (${tags_query});`, values_tags);
+    tag_resp = tag_resp.rows;
+
+    product_insert = []
+    for(let i=0; i &lt; tag_resp.length; i++) {
+        product_insert.push(tag_resp[i].id);
+        product_insert.push(product_id);
+    }
+
+    tags_insert = '';
+    for(let i=0; i &lt; product_insert.length; i+=2) {
+        tags_insert += `($${i+1},$${i+2}),`
+    }
+    tags_insert = tags_insert.substring(0, tags_insert.length - 1);
+    await pool.query(`INSERT INTO tags (tag_name, product) VALUES ${tags_insert};`, product_insert);
+}
+
+
+/**
+ * Changes the status of a product to "removed"
+ * @param {Integer} id: ID of product
+ * @return {Object} : Result
+ */
+async function remove_product(id) {
+    //Open connection
+    const pool = new Pool(config);
+    const result = await pool.query(`UPDATE products SET status='removed' WHERE id=$1;`, [id]);
+
+    // Close connection
+    pool.end()
+    return {status: 'ok'};
+}
+
+module.exports.get_products = get_products;
+module.exports.create_product = create_product;
+module.exports.update_product = update_product;
+module.exports.remove_product = remove_product;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#add_tags">add_tags</a></li><li><a href="global.html#create_product">create_product</a></li><li><a href="global.html#get_products">get_products</a></li><li><a href="global.html#remove_product">remove_product</a></li><li><a href="global.html#update_product">update_product</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Mon Mar 30 2020 15:42:10 GMT+0300 (EEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

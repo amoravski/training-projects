@@ -10,6 +10,24 @@
       <input style="width: 50rem;" v-model="searchTerm" type="text" id="searchTerm"/>
       <button v-on:click="search">Search</button>
 
+      <!--Cart and checkout-->
+      <div v-if="cart.length">
+        <h2>Cart</h2>
+       <table style="width: 40rem;">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th style="text-align:right">Price(total)</th>
+              <th>Quantity</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <CartItem @removed="removeCart" v-for="cartItem in cart" v-bind:key="cartItem.id" v-bind:cartItem=cartItem />
+          </tbody>
+      </table> 
+        <button v-on:click="buyCart">Checkout</button>
+      </div>
       <!--List of products-->
       <table>
           <thead>
@@ -23,7 +41,7 @@
             </tr>
           </thead>
           <tbody>
-            <Product @bought="buyProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product />
+            <Product @bought="addToCart" v-for="product in products" v-bind:key="product.id" v-bind:product=product />
           </tbody>
       </table>
 
@@ -41,14 +59,16 @@
 import axios from 'axios';
 
 import Product from './Product.vue';
+import CartItem from './CartItem.vue';
 
 export default {
   name: 'Products',
-  components: { Product },
+  components: { Product, CartItem },
 
   data () {
     return {
       products : [], 
+      cart: [],
       searchTerm : "",
       empty: false,
       lowerPrice: 0,
@@ -66,6 +86,8 @@ export default {
     if(this.orderID) {
       this.authenticateOrder();
     }
+    this.user_id = 1;
+    this.getCart();
     this.getProducts(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
   },
 
@@ -111,11 +133,11 @@ export default {
       this.priceSort = false;
       if(this.asc) {
         this.asc = false;
-        this.searchTerm();
+        this.search();
         return
       }
       this.asc = true;
-      this.searchTerm();
+      this.search();
       return
     },
 
@@ -133,10 +155,36 @@ export default {
       return
     },
 
-    buyProduct: function (event) {
-      console.log(event);
-      let url = `http://localhost:3000/order`
-      axios({ method:"POST", "url": url, data: event}).then(result => {
+    getCart: function () {
+      this.user_id = 1;
+      let url = `http://localhost:3000/cart?user_id=${this.user_id}`
+      axios({ method:"GET", "url": url}).then(result => {
+        let parsed = JSON.parse(JSON.stringify(result.data));
+        this.cart = parsed.cart;
+      }, error => {
+        console.log(error.response.data);
+        alert(error.response.data.message);
+      });
+    },
+
+    addToCart: function (event) {
+      let url = `http://localhost:3000/cart`
+      this.user_id = 1;
+      event.user_id = this.user_id;
+      axios({ method:"PUT", "url": url, data: event}).then(() => {
+        alert("Added to Cart");
+        this.getCart();
+      }, error => {
+        console.log(error.response.data);
+        //console.log(error);
+        alert(error.response.data.message);
+      });
+    },
+
+    buyCart: function () {
+      let url = `http://localhost:3000/paypal`
+      this.user_id = 1;
+      axios({ method:"POST", "url": url, data: {user_id: this.user_id}}).then(result => {
         let parsed = JSON.parse(JSON.stringify(result.data));
         this.order_id = parsed.order_id; 
         let parsed_order = JSON.parse(parsed.order);
@@ -151,12 +199,23 @@ export default {
     },
 
     authenticateOrder: function () {
-      let url = `http://localhost:3000/order`
-      axios({ method:"PUT", "url": url, data: {orderId: this.orderID}}).then(result => {
+      let url = `http://localhost:3000/paypal`
+      this.user_id = 1;
+      axios({ method:"PUT", "url": url, data: {orderId: this.orderID, user_id: this.user_id}}).then(result => {
         let parsed = JSON.parse(JSON.stringify(result.data));
         alert("Order confirmed!");
+        this.getCart();
         console.log(parsed);
       }, error => {
+        console.log(error);
+      });
+    },
+
+
+    removeCart: function (event) {
+      var url = `http://localhost:3000/cart?id=${event}`
+      axios({ method:"DELETE", "url": url}).then(() => { this.getCart();alert("Removed Item");}  
+      , error => {
         console.log(error);
       });
     },

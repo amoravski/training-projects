@@ -4,7 +4,7 @@
       <td>{{ order.name }}</td>
       <td style="text-align:right">{{ formatMoney() }} </td>
       <td>{{ order.quantity }}</td>
-      <td>{{ order.started_at }}</td>
+      <td>{{ formatDate() }}</td>
       <td>{{ order.status_name }}</td>
     </tr>
 </template>
@@ -21,6 +21,11 @@ export default {
       const st = Math.floor(total_money % 100).toString().padStart(2, '0');
       const final_str = lv + ',' + st + ' лв.';
       return final_str;
+    },
+
+    formatDate () {
+      const date_time = this.order.started_at.split('T');
+      return date_time[1].split('.')[0] + ' ' + date_time[0];
     },
 
   }

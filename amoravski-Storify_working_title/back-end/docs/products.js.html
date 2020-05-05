@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: products.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: products.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @fileoverview API endpoints for product resource
+ */
+
+
+const router = require('koa-router');
+const pg = require('./postgre.js');
+const products_router = router({
+    prefix: '/product'
+});
+
+
+// Add routes
+products_router.get('/', get_products);
+products_router.post('/', create_product);
+products_router.put('/', update_product);
+products_router.delete('/', remove_product);
+
+
+/**
+ * GET method for products
+ * @params {Context} ctx : Request context
+ * @returns {Null} : Function sets response context
+ */
+async function get_products(ctx) {
+    const filter = ctx.request.query ? ctx.request.query : {};
+
+    ctx.set("Access-Control-Allow-Origin", "*");
+    try {
+        const product_list_result = await pg.get_products(filter.id,filter.name,filter.tag,filter.lowerPrice,filter.upperPrice,filter.sort,filter.desc,filter.limit,filter.offset);
+        ctx.response.status = 200;
+        ctx.body = product_list_result;
+        return;
+    } catch(err) {
+        ctx.response.status = 500;
+        // Return error message only in debug!
+        ctx.body = {status:"internalError", message: err.message};
+        return;
+    }
+}
+
+
+/**
+ * POST method for products, checks for required params
+ * @params {Context} ctx : Request context
+ * @returns {Null} : Function sets response context
+ */
+async function create_product(ctx) {
+    ctx.set("Access-Control-Allow-Origin", "*");
+    // Throws error if request isn't multipart
+    try {
+        params = ctx.request.body;
+        file = ctx.request.files.file;
+    } catch (err) {
+        ctx.response.status = 400;
+        ctx.body = {status:"userError", message: "Incorrect type request"};
+        return;
+    }
+
+    // Check if required params are defined
+    if(!(params.name &amp;&amp; params.price &amp;&amp; params.quantity &amp;&amp; file)) {
+        ctx.response.status = 400;
+        ctx.body = {status:"userError", message: "Missing parameter"};
+        return;
+    }
+
+    try {
+        const product_create_result = await pg.create_product(params.name, params.price, params.quantity, file.path, params.tags);
+        ctx.response.status = 200;
+        ctx.body = product_create_result;
+        return;
+    } catch(err) {
+        ctx.response.status = 500;
+        // Return error message only in debug!
+        ctx.body = {status:"internalError", message: err.message};
+        return;
+    }
+}
+
+
+/**
+ * PUT method for products, checks for required params
+ * @params {Context} ctx : Request context
+ * @returns {Null} : Function sets response context
+ */
+async function update_product(ctx) {
+    ctx.set("Access-Control-Allow-Origin", "*");
+    // Throws error if request isn't multipart
+    try {
+        params = ctx.request.body;
+        file = ctx.request.files.file;
+    } catch (err) {
+        ctx.response.status = 400;
+        ctx.body = {status:"userError", message: "Incorrect type request"};
+        return;
+    }
+
+    // Check if required params are defined
+    if(!(params.id &amp;&amp;params.name &amp;&amp; params.price &amp;&amp; params.quantity &amp;&amp; file)) {
+        ctx.response.status = 400;
+        ctx.body = {status:"userError", message: "Missing parameter"};
+        return;
+    }
+
+    try {
+        const product_update_result = await pg.update_product(params.id, params.name, params.price, params.quantity, file.path, params.tags);
+        ctx.response.status = 200;
+        ctx.body = product_update_result;
+        return;
+    } catch(err) {
+        ctx.response.status = 500;
+        // Return error message only in debug!
+        ctx.body = {status:"internalError", message: err.message};
+        return;
+    }
+}
+
+
+/**
+ * DELETE method for products
+ * @params {Context} ctx : Request context
+ * @returns {Null} : Function sets response context
+ */
+async function remove_product(ctx) {
+    ctx.set("Access-Control-Allow-Origin", "*");
+
+    params = ctx.request.query;
+    if(!(params.id)) {
+        ctx.response.status = 400;
+        ctx.body = {status:"userError", message: "Missing parameter"};
+        return;
+    }
+
+    try {
+        const product_remove_result = await pg.remove_product(params.id);
+        ctx.response.status = 200;
+        ctx.body = product_remove_result;
+        return;
+    } catch(err) {
+        ctx.response.status = 500;
+        // Return error message only in debug!
+        ctx.body = {status:"internalError", message: err.message};
+        return;
+    }
+}
+
+
+module.exports = products_router;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#add_tags">add_tags</a></li><li><a href="global.html#create_product">create_product</a></li><li><a href="global.html#get_products">get_products</a></li><li><a href="global.html#remove_product">remove_product</a></li><li><a href="global.html#update_product">update_product</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.3</a> on Mon Mar 30 2020 15:42:10 GMT+0300 (EEST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

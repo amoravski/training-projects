@@ -1,41 +1,18 @@
 <template>
   <div id="products">
       <h2>Product List, Back Office</h2>
-      <p>
-      <button v-on:click="triggerFilters">Filters</button>
-      </p>
-      <div v-if="filters" class="bordered">
+      <div class="bordered">
 
-      <p>
       <label for="lower-price">Lower bound price:</label>
-      <input v-model="lowerPrice" type="number" id="lower-price" min=0/>
-    </p>
-      <p>
+      <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
       <label for="upper-price">Upper bound price:</label>
-      <input v-model="upperPrice" type="number" id="upper-price" min=0/>
-    </p>
-      <p>
-      <button v-on:click="sortProductsNameAscending">Ascending name</button>
-      <button v-on:click="sortProductsNameDescending">Descending name</button>
-    </p>
-      <p>
-      <button v-on:click="sortProductsPriceAscending">Ascending price</button>
-      <button v-on:click="sortProductsPriceDescending">Descending price</button>
-    </p>
+      <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
       </div>
-      <p>
         <label for="filter"><b>Search: </b></label>
         <input v-model="filter" type="text" id="filter"/>
-      </p>
-      <p>
       <button v-on:click="search">Search</button>
-      </p>
-      <p>
       <button v-if="!newForm" v-on:click="newFormButton">New Product</button>
-      </p>
-      <p>
       <button v-if="newForm" v-on:click="newFormButton">Close Form</button>
-      </p>
       <BONewProductForm v-if="newForm" @created="createProduct" />
         <table>
             <thead>
@@ -83,7 +60,7 @@ export default {
       this.filters = !this.filters;
     },
     getProducts: function (name, tag, lowerPrice, upperPrice) {
-      var url = `http://localhost:3000/product?offset=${this.page*5}&limit=10`
+      var url = `http://localhost:3000/product?offset=${this.page*10}&limit=10`
       var appended = true
       if (name) {
         url += appended ? `&name=${name}` : `?name=${name}`
@@ -93,8 +70,8 @@ export default {
         url += appended ? `&tag=${tag}` : `?tag=${tag}`
         appended = true
       }
-      if (upperPrice > 0 && this.filters){
-        url += appended ? `&lowerPrice=${lowerPrice}&upperPrice=${upperPrice}` : `?lowerPrice=${lowerPrice}&upperPrice=${upperPrice}`
+      if (upperPrice > 0){
+        url += appended ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : `?lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}`
         appended = true
       }
       axios({ method:"GET", "url": url}).then(result => {
