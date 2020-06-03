@@ -25,7 +25,7 @@ export default {
 
     formatDate () {
       const date_time = this.order.started_at.split('T');
-      return date_time[1].split('.')[0] + ' ' + date_time[0];
+      return date_time[0] + ' ' + date_time[1].split('.')[0];
     },
 
   }

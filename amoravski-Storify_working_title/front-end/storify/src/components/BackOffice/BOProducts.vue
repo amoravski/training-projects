@@ -1,12 +1,13 @@
 <template>
   <div id="products">
-      <h2>Product List, Back Office</h2>
+      <Header />
+      <h2>Products</h2>
       <div class="bordered">
-
-      <label for="lower-price">Lower bound price:</label>
-      <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
-      <label for="upper-price">Upper bound price:</label>
-      <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
+        Price filter: from
+        <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
+        to
+        <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
+        lv.
       </div>
         <label for="filter"><b>Search: </b></label>
         <input v-model="filter" type="text" id="filter"/>
@@ -39,12 +40,13 @@
 
 <script>
 import axios from 'axios';
+import Header from './BOHeader.vue';
 import BOProduct from './BOProduct.vue';
 import BONewProductForm from './BONewProductForm.vue';
 
 export default {
   name: 'BOProducts',
-  components: {BOProduct, BONewProductForm},
+  components: {Header, BOProduct, BONewProductForm},
   data () {
     return { products : [], filter : "", empty: false, newForm: false, lowerPrice: 0, upperPrice: 0, filters: false, nameSort: true, priceSort: true, page: 0, count:0}
   },

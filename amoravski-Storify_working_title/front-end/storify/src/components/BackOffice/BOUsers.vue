@@ -1,14 +1,7 @@
 <template>
-  <div id="orders">
+  <div id="users">
       <Header />
-      <h2>Orders</h2>
-      <div class="bordered">
-        Price filter: from
-        <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
-        to
-        <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
-        lv.
-      </div>
+      <h2>Users</h2>
       <label for="searchTerm"><b>Search: </b></label>
       <input v-model="searchTerm" type="text" id="searchTerm"/>
       <button v-on:click="search">Search</button>
@@ -18,20 +11,17 @@
             <th>ID</th>
             <th>Name</th>
             <th style="text-align:right">Value(total)</th>
-            <th>Quantity</th>
-            <th>Started at</th>
-            <th>Status</th>
           </tr>
         </thead>
         <tbody>
-          <BOOrder  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
+          <BOUser  v-for="user in users" v-bind:key="user.id" v-bind:user=user />
         </tbody>
     </table>
 
     <!--Pages-->
     <button v-if="page" v-on:click="goBackwardsPage">&lt;</button>
     <button>{{ page+1 }}</button>
-    <button v-if="(page+1)*10 < ordersCount" v-on:click="goForwardsPage">&gt;</button>
+    <button v-if="(page+1)*10 < usersCount" v-on:click="goForwardsPage">&gt;</button>
 
     <!--Empty page-->
     <h3 v-if="empty">None found! :(</h3>
@@ -40,22 +30,22 @@
 
 <script>
 import axios from 'axios';
-import BOOrder from './BOOrder.vue';
+import BOUser from './BOUser.vue';
 import Header from './BOHeader.vue';
 
 export default {
-  name: 'BOOrders',
-  components: { Header, BOOrder },
+  name: 'BOUsers',
+  components: { Header, BOUser },
 
   data () {
     return {
-      orders : [], 
+      users : [], 
       searchTerm : "",
       empty: false,
       lowerPrice: 0,
       upperPrice: 0,
       page: 0,
-      ordersCount: 0,
+      usersCount: 0,
       asc: false,
       nameSort: false,
       priceSort: false,
@@ -63,32 +53,29 @@ export default {
   },
 
   mounted () {
-    this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+    this.getUsers(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
   },
   methods: {
     search: function () {
       this.page = 0;
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getUsers(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
     },
 
-    getOrders: function (name, tag, lowerPrice, upperPrice) {
+    getUsers: function (name) {
       // Build url
       const backendurl = 'http://localhost:3000/';
-      let url = backendurl + `orderTEMP?offset=${this.page*10}&limit=10`;
+      let url = backendurl + `account?offset=${this.page*10}&limit=10`;
       url += name ? `&name=${name}` : '';
-      url += tag ? `&tag=${tag}` : '';
       url += this.nameSort ? `&sort=name` : '';
-      url += this.priceSort ? `&sort=price` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';
-      url += upperPrice > 0 ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : '';
       // Make request
       axios({ method:"GET", "url": url})
         .then(
           result => {
             let parsed = JSON.parse(JSON.stringify(result.data));
-            this.orders = parsed.orders; 
-            this.ordersCount = parsed.count; 
-            if(this.orders.length == 0) {
+            this.users = parsed.accounts; 
+            this.usersCount = parsed.count; 
+            if(this.users.length == 0) {
               this.empty= true;
             }
             else {
@@ -103,13 +90,13 @@ export default {
 
     goForwardsPage: function() {
       this.page++;
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getUsers(this.searchTerm,this.searchTerm);
     },
 
     goBackwardsPage: function() {
       if(this.page>0) {
         this.page--;
-        this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+        this.getUsers(this.searchTerm,this.searchTerm);
       }
     },
   }

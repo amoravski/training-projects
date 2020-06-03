@@ -1,11 +1,13 @@
 <template>
   <div id="products">
+      <Header />
       <!--Filters and search-->
-      <h2>Product List</h2>
-      <label for="lower-price">Lower bound price:</label>
+      <h2>Products</h2>
+      Price filter: from
       <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price"/>
-      <label for="upper-price">Upper bound price:</label>
+      to
       <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price"/>
+      lv.
       <label for="searchTerm"><b>Search: </b></label>
       <input style="width: 50rem;" v-model="searchTerm" type="text" id="searchTerm"/>
       <button v-on:click="search">Search</button>
@@ -17,13 +19,23 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th style="text-align:right">Price(total)</th>
+              <th style="text-align:right">Price</th>
+              <th></th>
               <th>Quantity</th>
+              <th style="text-align:right">Price(total)</th>
+              <th></th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <CartItem @removed="removeCart" v-for="cartItem in cart" v-bind:key="cartItem.id" v-bind:cartItem=cartItem />
+            <tr>
+              <th>Total Price</th>
+              <td style="text-align:right">{{ formatMoney(totalCartPrice()) }}</td>
+              <td>лв.</td>
+              <th></th>
+              <th></th>
+            </tr>
           </tbody>
       </table> 
         <button v-on:click="buyCart">Checkout</button>
@@ -56,14 +68,16 @@
 </template>
 
 <script>
+import jwt_decode from 'jwt-decode';
 import axios from 'axios';
 
+import Header from './Header.vue';
 import Product from './Product.vue';
 import CartItem from './CartItem.vue';
 
 export default {
   name: 'Products',
-  components: { Product, CartItem },
+  components: { Header, Product, CartItem },
 
   data () {
     return {
@@ -79,15 +93,27 @@ export default {
       nameSort: true,
       priceSort: false,
       orderID: this.$route.query.token,
+      jwt: '',
+      userName: '',
+      user_id: '',
     };
   },
 
   mounted () {
+    
+    if(typeof localStorage.getItem('JWT_account_storify') != undefined && localStorage.getItem('JWT_account_storify') != null) {
+      this.jwt = localStorage.getItem('JWT_account_storify');
+      this.userName = jwt_decode(this.jwt).userName;
+      this.user_id = jwt_decode(this.jwt).id;
+      this.getCart();
+    }
+    else {
+      this.jwt = '';
+      this.user_id = 1;
+    }
     if(this.orderID) {
       this.authenticateOrder();
     }
-    this.user_id = 1;
-    this.getCart();
     this.getProducts(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
   },
 
@@ -107,13 +133,16 @@ export default {
       url += this.priceSort ? `&sort=price` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';
       url += upperPrice > 0 ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : '';
+      url += this.productsCount ? '&returnCount=false' : '&returnCount=true';
       // Make request
       axios({ method:"GET", "url": url})
         .then(
           result => {
             let parsed = JSON.parse(JSON.stringify(result.data));
             this.products = parsed.products; 
-            this.productsCount = parsed.count; 
+            if(typeof parsed.count != 'undefined' && parsed.count != null) {
+              this.productsCount = parsed.count; 
+            }
             if(this.products.length == 0) {
               this.empty= true;
             }
@@ -156,11 +185,22 @@ export default {
     },
 
     getCart: function () {
-      this.user_id = 1;
-      let url = `http://localhost:3000/cart?user_id=${this.user_id}`
+      let url = `http://localhost:3000/cart?user_id=${this.user_id}&jwt=${this.jwt}`
       axios({ method:"GET", "url": url}).then(result => {
         let parsed = JSON.parse(JSON.stringify(result.data));
-        this.cart = parsed.cart;
+        if(this.cart.length == 0) {
+          this.cart = parsed.cart;
+          return;
+        }
+        for(let i=0; i<this.cart.length; i++) {
+          for(let j=0; j<parsed.cart.length; j++) {
+            if(this.cart[i].product_id == parsed.cart[j].product_id) {
+              this.cart[i].quantity = parsed.cart[j].quantity;
+              continue;
+            }
+            this.cart.push(parsed.cart[i]);
+        }
+        }
       }, error => {
         console.log(error.response.data);
         alert(error.response.data.message);
@@ -169,8 +209,8 @@ export default {
 
     addToCart: function (event) {
       let url = `http://localhost:3000/cart`
-      this.user_id = 1;
       event.user_id = this.user_id;
+      event.jwt = this.jwt;
       axios({ method:"PUT", "url": url, data: event}).then(() => {
         alert("Added to Cart");
         this.getCart();
@@ -183,8 +223,7 @@ export default {
 
     buyCart: function () {
       let url = `http://localhost:3000/paypal`
-      this.user_id = 1;
-      axios({ method:"POST", "url": url, data: {user_id: this.user_id}}).then(result => {
+      axios({ method:"POST", "url": url, data: {user_id: this.user_id, cart: this.cart}}).then(result => {
         let parsed = JSON.parse(JSON.stringify(result.data));
         this.order_id = parsed.order_id; 
         let parsed_order = JSON.parse(parsed.order);
@@ -200,7 +239,6 @@ export default {
 
     authenticateOrder: function () {
       let url = `http://localhost:3000/paypal`
-      this.user_id = 1;
       axios({ method:"PUT", "url": url, data: {orderId: this.orderID, user_id: this.user_id}}).then(result => {
         let parsed = JSON.parse(JSON.stringify(result.data));
         alert("Order confirmed!");
@@ -213,11 +251,27 @@ export default {
 
 
     removeCart: function (event) {
-      var url = `http://localhost:3000/cart?id=${event}`
-      axios({ method:"DELETE", "url": url}).then(() => { this.getCart();alert("Removed Item");}  
+      let url = `http://localhost:3000/cart?id=${event}`
+      axios({ method:"DELETE", "url": url}).then(() => { 
+        this.getCart();
+        alert("Removed Item");
+      }  
       , error => {
         console.log(error);
       });
+    },
+
+    totalCartPrice: function () {
+      if(this.cart.length == 0) {
+        return 0;
+      }
+      let acc = 0;
+      for(let i=0; i<this.cart.length; i++) {
+        acc += this.cart[i].price * this.cart[i].quantity;
+        console.log(this.cart[i]);
+      }
+      console.log(acc);
+      return acc;
     },
 
     goForwardsPage: function() {
@@ -231,6 +285,14 @@ export default {
         this.getProducts(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
       }
     },
+
+    formatMoney (price) {
+      const lv = Math.floor(price/100).toString();
+      const st = Math.floor(price % 100).toString().padStart(2, '0');
+      const final_str = lv + ',' + st;
+      return final_str;
+    },
+
   },
 }
 
