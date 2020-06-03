@@ -3,7 +3,7 @@ const router = require('koa-router');
 
 const pg = require('./postgre.js');
 const orders_router = router({
-    prefix: '/order'
+    prefix: '/paypal'
 });
 
 // Creating an environment
@@ -18,22 +18,31 @@ let client = new paypal.core.PayPalHttpClient(environment);
 
 orders_router.post('/', create_order);
 orders_router.put('/', authorize_order);
+
 async function create_order(ctx) {
     params = ctx.request.body;
 
+    //const cart_query = await pg.get_cart(params.user_id);
+    //const cart = cart_query.cart;
+    const cart = params.cart;
+
     let request = new paypal.orders.OrdersCreateRequest();
-    request.requestBody(buildRequestBody(params.name, params.quantity, params.price));
+    request.requestBody(buildRequestBody(cart));
 
     try {
-        let available = await pg.check_available(params.id, params.quantity);
-        if(available.status == "error"){
-            ctx.response.status = 400;
-            ctx.body = available;
-            return;
+        for(let i=0; i<cart.length; i++) {
+            let available = await pg.check_available(cart[i].product_id, cart[i].quantity);
+            if(available.status == "error"){
+                ctx.response.status = 400;
+                ctx.body = available;
+                return;
+            }
         }
         let response = await client.execute(request);
         let resp_order = JSON.parse(JSON.stringify(response.result));
-        let order_response = await pg.create_order(params.id, params.quantity, params.price, resp_order.id);
+        for(let i=0; i<cart.length; i++) {
+            let order_response = await pg.create_order(cart[i].product_id, cart[i].quantity, cart[i].price, resp_order.id);
+        }
         ctx.response.status = 200;
         ctx.body = { status: "ok", order: JSON.stringify(response.result)};
         return;
@@ -51,7 +60,7 @@ async function authorize_order(ctx) {
     request.requestBody({});
     try {
         let response = await client.execute(request);
-        order_response = await pg.authorize_order(order_id_paypal);
+        order_response = await pg.authorize_order(order_id_paypal, params.user_id);
         ctx.response.status = 200;
         ctx.body = { status: "ok", order: JSON.stringify(response.result) };
     } catch(err) {
@@ -61,7 +70,21 @@ async function authorize_order(ctx) {
     }
 }
 
-function buildRequestBody(product_name, quantity, price) {
+function buildRequestBody(cart) {
+    let items = [];
+    let total_value = 0;
+    for(let i=0; i<cart.length; i++) {
+        items.push({
+                        "name": `${cart[i].name}`,
+                        "unit_amount": {
+                            "currency_code": "USD",
+                            "value": `${cart[i].price / 100}`
+                        },
+                        "quantity": `${cart[i].quantity}`,
+                        "category": "PHYSICAL_GOODS"
+                    });
+        total_value += cart[i].quantity * (cart[i].price / 100 );
+    }
     return {
         "intent": "CAPTURE",
         "application_context": {
@@ -76,24 +99,15 @@ function buildRequestBody(product_name, quantity, price) {
                 "reference_id": "PUHF",
                 "amount": {
                     "currency_code": "USD",
-                    "value": `${quantity * (price / 100)}`,
+                    "value": `${total_value}`,
                     "breakdown": {
                         "item_total": {
                             "currency_code": "USD",
-                            "value": `${quantity * (price / 100)}`
+                            "value": `${total_value}`
                         }
                     },
                     },
-                "items": [
-                    {
-                        "name": `${product_name}`,
-                        "unit_amount": {
-                            "currency_code": "USD",
-                            "value": `${price / 100}`
-                        },
-                        "quantity": `${quantity}`,
-                        "category": "PHYSICAL_GOODS"
-                    }],
+                "items": items,
                 "shipping": {
                     "method": "United States Postal Service",
                     "name": {

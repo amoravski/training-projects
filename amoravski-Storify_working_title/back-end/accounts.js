@@ -33,22 +33,32 @@ async function getAccounts(ctx) {
 }
 
 async function newAccount(ctx) {
+    const params = ctx.request.body;
     try {
-        params = ctx.request.body;
-        userName = params.userName;
-        email = params.email;
-        password = params.password;
+        const userName = params.userName;
+        const email = params.email;
+        const password = params.password;
         if(!(userName && email && password)) {
             throw 'Missing params';
         }
+        if(!(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email))) {
+            throw 'Invalid Email';
+        }
+        if(!(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(password))) {
+            throw 'Invalid Password';
+        }
+        const availability = await pg.checkAvailability(userName, email);
+        if(availability.status != 'ok') {
+            throw availability.message;
+        }
     } catch (err) {
         ctx.response.status = 400;
-        ctx.body = {status:"userError", message: "Missing params"};
+        ctx.body = {status:"userError", message: err};
         return;
     }
 
     try {
-        const newAccountResult = await pg.newAccount(userName, email, password);
+        const newAccountResult = await pg.newAccount(params.userName, params.email, params.password);
         ctx.response.status = 200;
         ctx.body = newAccountResult;
         return;

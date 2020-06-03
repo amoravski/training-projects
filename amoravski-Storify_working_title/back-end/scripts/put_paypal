@@ -1,0 +1,3 @@
+#!/bin/bash
+
+curl -X PUT "http://localhost:3000/order" -H "Content-Type: application/json" -d '{"orderId":"40647715BR466290B"}'

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+curl -X POST "http://localhost:3000/product" -F 'name="BeepBoopZonga"' -F 'quantity=13' -F 'added_by=2' -F 'price=2220' -F 'tags=["Ninja","Sinzddza","Gdadwzaa"]' -F 'file=@1.png'

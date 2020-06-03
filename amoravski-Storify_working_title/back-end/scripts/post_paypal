@@ -1,0 +1,3 @@
+#!/bin/bash
+
+curl -X POST "http://localhost:3000/order" -H "Content-Type: application/json" -d '{"id":2006,"name":"test","quantity":3,"price":3}'

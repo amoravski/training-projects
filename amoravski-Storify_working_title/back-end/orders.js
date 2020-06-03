@@ -7,9 +7,10 @@ const orders_router = router({
 orders_router.get('/', get_orders);
 
 async function get_orders(ctx) {
+    const filter = ctx.request.query ? ctx.request.query : {};
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
-        const order_list_result = await pg.get_orders();
+        const order_list_result = await pg.get_orders(filter.id,filter.name,filter.tag,filter.lowerPrice,filter.upperPrice,filter.sort,filter.ord,filter.limit,filter.offset);
         ctx.response.status = 200;
         ctx.body = order_list_result;
         return;
