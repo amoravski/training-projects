@@ -24,7 +24,7 @@
                 <th>Quantity</th>
                 <th>Tags</th>
                 <th></th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -76,10 +76,13 @@ export default {
         url += appended ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : `?lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}`
         appended = true
       }
+      url += this.count ? '&returnCount=false' : '&returnCount=true';
       axios({ method:"GET", "url": url}).then(result => {
         var parsed = JSON.parse(JSON.stringify(result.data));
         this.products = parsed.products; 
-        this.count = parsed.count; 
+        if(typeof parsed.count != 'undefined' && parsed.count != null) {
+          this.count = parsed.count; 
+        }
         if(this.products.length == 0) {
           this.empty= true;
         }

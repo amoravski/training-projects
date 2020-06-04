@@ -21,10 +21,12 @@
             <th>Quantity</th>
             <th>Started at</th>
             <th>Status</th>
+            <th></th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <BOOrder  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
+          <BOOrder @updated="updateOrder" @removed="removeOrder"  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
         </tbody>
     </table>
 
@@ -74,7 +76,7 @@ export default {
     getOrders: function (name, tag, lowerPrice, upperPrice) {
       // Build url
       const backendurl = 'http://localhost:3000/';
-      let url = backendurl + `orderTEMP?offset=${this.page*10}&limit=10`;
+      let url = backendurl + `order?offset=${this.page*10}&limit=10`;
       url += name ? `&name=${name}` : '';
       url += tag ? `&tag=${tag}` : '';
       url += this.nameSort ? `&sort=name` : '';
@@ -99,6 +101,27 @@ export default {
             console.log(error);
           }
         );
+    },
+
+    removeOrder: function (event) {
+      var url = `http://localhost:3000/order?id=${event}`
+      axios({ method:"DELETE", "url": url}).then(() => { 
+          this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+        }
+      , error => {
+        console.log(error);
+      });
+    },
+
+    updateOrder: function(event) {
+      this.newForm = false;
+      var url = `http://localhost:3000/order`
+      axios({ method:"PUT", "url": url, data: event}).then(() => {
+          this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+        }
+      , error => {
+        console.log(error);
+      });
     },
 
     goForwardsPage: function() {
