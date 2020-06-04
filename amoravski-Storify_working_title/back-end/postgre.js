@@ -211,10 +211,10 @@ async function create_product(name,price,quantity,file_path,tags) {
     //Get current moment in epoch
     let created_at = Math.floor(new Date() / 1000);
 
-    response = await pool.query(`INSERT INTO products (name, price, quantity, added_by, created_at, picture_path) VALUES ($1, $2, $3, $4,to_timestamp($5), $6) RETURNING id;`, [name,price,quantity,added_by,created_at,file_path]);
-    product_id = response.rows[0].id;
+    let response = await pool.query(`INSERT INTO products (name, price, quantity, added_by, created_at, picture_path) VALUES ($1, $2, $3, $4,to_timestamp($5), $6) RETURNING id;`, [name,price,quantity,added_by,created_at,file_path]);
+    let product_id = response.rows[0].id;
 
-    await add_tags(JSON.parse(params.tags), pool, product_id);
+    await add_tags(JSON.parse(tags), pool, product_id);
 
     //Close connection
     pool.end();
@@ -236,7 +236,7 @@ async function update_product(id,name,price,quantity,file_path,tags) {
     // Connect to DB
     const pool = new Pool(config);
 
-    const response = await pool.query(`UPDATE products SET name=$1,price=$2,quantity=$3,picture_path=$4 WHERE id=$5;`, [name,price,quantity,files.file.path,id]);
+    const response = await pool.query(`UPDATE products SET name=$1,price=$2,quantity=$3,picture_path=$4 WHERE id=$5;`, [name,price,quantity,file_path,id]);
     const tag_response = await pool.query('DELETE FROM tags WHERE product=$1',[id])
 
     await add_tags(JSON.parse(tags), pool, id);
@@ -255,10 +255,10 @@ async function update_product(id,name,price,quantity,file_path,tags) {
  * @return {Object} : Result message
  */
 async function add_tags(values_tags, pool, product_id) {
-    values_tag_names = [];
+    let values_tag_names = [];
 
-    tags_query = '';
-    tags_query_select = '';
+    let tags_query = '';
+    let tags_query_select = '';
     for(let i=0; i < values_tags.length; i++) {
         tags_query += `($${i+1}),`
         tags_query_select += `$${i+1},`;
@@ -266,16 +266,16 @@ async function add_tags(values_tags, pool, product_id) {
     tags_query = tags_query.substring(0, tags_query.length - 1);
     tags_query_select = tags_query_select.substring(0, tags_query_select.length - 1);
     await pool.query(`INSERT INTO tag_names (tag_name) VALUES ${tags_query} ON CONFLICT DO NOTHING;`, values_tags);
-    tag_resp = await pool.query(`SELECT id,tag_name FROM tag_names WHERE tag_name IN (${tags_query});`, values_tags);
+    let tag_resp = await pool.query(`SELECT id,tag_name FROM tag_names WHERE tag_name IN (${tags_query});`, values_tags);
     tag_resp = tag_resp.rows;
 
-    product_insert = []
+    let product_insert = []
     for(let i=0; i < tag_resp.length; i++) {
         product_insert.push(tag_resp[i].id);
         product_insert.push(product_id);
     }
 
-    tags_insert = '';
+    let tags_insert = '';
     for(let i=0; i < product_insert.length; i+=2) {
         tags_insert += `($${i+1},$${i+2}),`
     }
@@ -300,12 +300,12 @@ async function remove_product(id) {
 }
 
 
-async function get_orders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset) {
+async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset) {
     //Open connection
     const pool = new Pool(config);
 
     // Build up the formatted query
-    let query_string = 'SELECT orders.id, products.name, orders.value, orders.quantity, orders.started_at, order_statuses.status_name FROM orders INNER JOIN products ON orders.product_id = products.id INNER JOIN order_statuses ON orders.status = order_statuses.id ';
+    let query_string = 'SELECT orders.id, products.name, orders.value, orders.quantity, orders.started_at, order_statuses.status_name FROM orders INNER JOIN products ON orders.product_id = products.id INNER JOIN order_statuses ON orders.status = order_statuses.id WHERE orders.status <> 4';
 
     //Flag to control if AND was appended already
     let appended = false;
@@ -440,6 +440,26 @@ async function create_order(product_id, quantity, value, paypal_id) {
     return {status: 'ok', id: result.rows[0].id};
 }
 
+async function updateOrder(id, productId, userId, quantity, status, startedAt) {
+    const pool = new Pool(config);
+
+    const result = await pool.query('UPDATE orders SET product_id=$1, user_id=$2, quantity=$3, status=$4, startedAt=$5 WHERE id=$6',[id, productId, userId, quantity, status, startedAt]);
+
+    pool.end()
+
+    return {status: 'ok'};
+}
+
+async function deleteOrder(id) {
+    const pool = new Pool(config);
+
+    const result = await pool.query('UPDATE orders SET status=4 WHERE id=$1', [id]);
+
+    pool.end()
+
+    return {status: 'ok'};
+}
+
 async function check_available(product_id, quantity) {
     const pool = new Pool(config);
     const query = await pool.query('SELECT quantity FROM Products where id=$1', [product_id]);
@@ -466,7 +486,6 @@ async function get_cart(user_id) {
     const pool = new Pool(config);
 
     const result = await pool.query('SELECT carts.id, carts.user_id, carts.product_id, carts.quantity, carts.created_at, products.name, products.price FROM carts INNER JOIN products ON carts.product_id = products.id WHERE user_id=$1;', [user_id]);
-    console.log(result);
 
     pool.end()
     return {status: 'ok', cart: result.rows};
@@ -611,7 +630,9 @@ module.exports.create_product = create_product;
 module.exports.update_product = update_product;
 module.exports.remove_product = remove_product;
 
-module.exports.get_orders = get_orders;
+module.exports.getOrders = getOrders;
+module.exports.updateOrder = updateOrder;
+module.exports.deleteOrder = deleteOrder;
 module.exports.create_order = create_order;
 module.exports.check_available = check_available;
 module.exports.authorize_order = authorize_order;

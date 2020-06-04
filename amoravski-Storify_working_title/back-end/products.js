@@ -49,9 +49,10 @@ async function get_products(ctx) {
 async function create_product(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     // Throws error if request isn't multipart
+
     try {
-        params = ctx.request.body;
-        file = ctx.request.files.file;
+        var params = ctx.request.body;
+        var file = ctx.request.files.file;
     } catch (err) {
         ctx.response.status = 400;
         ctx.body = {status:"userError", message: "Incorrect type request"};
@@ -64,7 +65,6 @@ async function create_product(ctx) {
         ctx.body = {status:"userError", message: "Missing parameter"};
         return;
     }
-
     try {
         const product_create_result = await pg.create_product(params.name, params.price, params.quantity, file.path, params.tags);
         ctx.response.status = 200;
@@ -88,8 +88,8 @@ async function update_product(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     // Throws error if request isn't multipart
     try {
-        params = ctx.request.body;
-        file = ctx.request.files.file;
+        var params = ctx.request.body;
+        var file = ctx.request.files.file;
     } catch (err) {
         ctx.response.status = 400;
         ctx.body = {status:"userError", message: "Incorrect type request"};
