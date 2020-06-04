@@ -1,6 +1,7 @@
 <template>
   <div id="register">
       <Header />
+      <h2>Register</h2>
       <label for="username">Username:</label>
       <input v-model="form.username" name="username" type="text">
 
@@ -41,7 +42,8 @@ export default {
       axios({ method:"POST", "url": url, "data": {userName: this.form.username, email: this.form.email, password: this.form.password}})
         .then(
           () => {
-            alert("Account made");
+            alert("Account made, please log in");
+            this.$router.push({ name: 'Login'});
           },
           error => {
             const resp = error.response.data.message;

@@ -1,6 +1,7 @@
 <template>
   <div id="login">
       <Header />
+      <h2>Login</h2>
       <label for="email">Email:</label>
       <input v-model="form.email" name="email" type="text">
 
