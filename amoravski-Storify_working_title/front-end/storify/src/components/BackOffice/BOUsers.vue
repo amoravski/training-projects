@@ -10,11 +10,13 @@
           <tr>
             <th>ID</th>
             <th>Name</th>
-            <th style="text-align:right">Value(total)</th>
+            <th style="text-align:right">Created at</th>
+            <th></th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <BOUser  v-for="user in users" v-bind:key="user.id" v-bind:user=user />
+          <BOUser @removed="removeUser"  v-for="user in users" v-bind:key="user.id" v-bind:user=user />
         </tbody>
     </table>
 
@@ -86,6 +88,15 @@ export default {
             console.log(error);
           }
         );
+    },
+
+    removeUser: function (event) {
+      var url = `http://localhost:3000/account?id=${event}`
+      axios({ method:"DELETE", "url": url}).then(() => { this.getUsers(this.searchTerm, this.searchTerm);
+        }
+      , error => {
+        console.log(error);
+      });
     },
 
     goForwardsPage: function() {

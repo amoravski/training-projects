@@ -188,19 +188,7 @@ export default {
       let url = `http://localhost:3000/cart?user_id=${this.user_id}&jwt=${this.jwt}`
       axios({ method:"GET", "url": url}).then(result => {
         let parsed = JSON.parse(JSON.stringify(result.data));
-        if(this.cart.length == 0) {
-          this.cart = parsed.cart;
-          return;
-        }
-        for(let i=0; i<this.cart.length; i++) {
-          for(let j=0; j<parsed.cart.length; j++) {
-            if(this.cart[i].product_id == parsed.cart[j].product_id) {
-              this.cart[i].quantity = parsed.cart[j].quantity;
-              continue;
-            }
-            this.cart.push(parsed.cart[i]);
-        }
-        }
+        this.cart = parsed.cart;
       }, error => {
         console.log(error.response.data);
         alert(error.response.data.message);

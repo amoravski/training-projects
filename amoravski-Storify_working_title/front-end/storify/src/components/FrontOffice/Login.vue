@@ -35,7 +35,7 @@ export default {
 
     submit () {
       const backendurl = 'http://localhost:3000/';
-      let url = backendurl + 'authentication';
+      let url = backendurl + 'authentication/user';
       axios({ method:"POST", "url": url, "data": {email: this.form.email, password: this.form.password}})
         .then(
           result => {
@@ -45,7 +45,9 @@ export default {
             this.$router.push({ name: 'Products'});
           },
           error => {
-            console.log(error);
+            const resp = error.response.data.message;
+            console.log(resp);
+            alert(resp);
           }
         );
     },

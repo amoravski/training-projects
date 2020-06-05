@@ -1,6 +1,7 @@
 <template>
   <div id="login">
       <Header />
+      <h2>Admin login</h2>
       <label for="email">Email:</label>
       <input v-model="form.email" name="email" type="text">
 
@@ -34,7 +35,7 @@ export default {
 
     submit () {
       const backendurl = 'http://localhost:3000/';
-      let url = backendurl + 'authentication';
+      let url = backendurl + 'authentication/admin';
       axios({ method:"POST", "url": url, "data": {email: this.form.email, password: this.form.password}})
         .then(
           result => {
@@ -45,6 +46,8 @@ export default {
           },
           error => {
             console.log(error);
+            const resp = error.response.data.message;
+            alert(resp);
           }
         );
     },

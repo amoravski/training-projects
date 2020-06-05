@@ -1,6 +1,7 @@
 <template>
   <div id="register">
       <Header />
+      <h2>Admin register</h2>
       <label for="username">Username:</label>
       <input v-model="form.username" name="username" type="text">
 
@@ -37,7 +38,7 @@ export default {
 
     submit () {
       const backendurl = 'http://localhost:3000/';
-      let url = backendurl + 'account';
+      let url = backendurl + 'admin';
       axios({ method:"POST", "url": url, "data": {userName: this.form.username, email: this.form.email, password: this.form.password}})
         .then(
           () => {
