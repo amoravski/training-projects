@@ -77,7 +77,7 @@ function buildRequestBody(cart) {
         items.push({
                         "name": `${cart[i].name}`,
                         "unit_amount": {
-                            "currency_code": "USD",
+                            "currency_code": "EUR",
                             "value": `${cart[i].price / 100}`
                         },
                         "quantity": `${cart[i].quantity}`,
@@ -98,11 +98,11 @@ function buildRequestBody(cart) {
             {
                 "reference_id": "PUHF",
                 "amount": {
-                    "currency_code": "USD",
+                    "currency_code": "EUR",
                     "value": `${total_value}`,
                     "breakdown": {
                         "item_total": {
-                            "currency_code": "USD",
+                            "currency_code": "EUR",
                             "value": `${total_value}`
                         }
                     },

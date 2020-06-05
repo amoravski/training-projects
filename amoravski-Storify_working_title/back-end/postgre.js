@@ -518,7 +518,7 @@ async function getAccounts(id, userName, email) {
     let queryCondition = '';
     if(id) {
         if(queryCondition == '') {
-            queryCondition += ` WHERE id=$${arg}`;
+            queryCondition += ` AND id=$${arg}`;
             arg++;
             args.push(id);
         }
@@ -530,7 +530,7 @@ async function getAccounts(id, userName, email) {
     }
     if(userName) {
         if(queryCondition == '') {
-            queryCondition += ` WHERE user_name=$${arg}`;
+            queryCondition += ` AND user_name=$${arg}`;
             arg++;
             args.push(userName);
         }
@@ -542,7 +542,7 @@ async function getAccounts(id, userName, email) {
     }
     if(email) {
         if(queryCondition == '') {
-            queryCondition += ` WHERE email=$${arg}`;
+            queryCondition += ` AND email=$${arg}`;
             arg++;
             args.push(email);
         }
@@ -552,9 +552,9 @@ async function getAccounts(id, userName, email) {
             args.push(email);
         }
     }
-    let query = 'SELECT * FROM users;';
+    let query = 'SELECT * FROM users WHERE status <> 0;';
     if(queryCondition != '') {
-        query = 'SELECT * FROM users' + queryCondition + ';';
+        query = 'SELECT * FROM users WHERE status <> 0' + queryCondition + ';';
     }
     const result = await pool.query(query, args);
 
@@ -614,15 +614,118 @@ async function deleteAccount(id) {
     return {status: 'ok'};
 }
 
+async function getAdmin(id, userName, email) {
+    const pool = new Pool(config);
+
+    let arg = 1;
+    let args = [];
+    let queryCondition = '';
+    if(id) {
+        if(queryCondition == '') {
+            queryCondition += ` AND id=$${arg}`;
+            arg++;
+            args.push(id);
+        }
+        else {
+            queryCondition += ` OR id=$${arg}`;
+            arg++;
+            args.push(id);
+        }
+    }
+    if(userName) {
+        if(queryCondition == '') {
+            queryCondition += ` AND user_name=$${arg}`;
+            arg++;
+            args.push(userName);
+        }
+        else {
+            queryCondition += ` OR user_name=$${arg}`;
+            arg++;
+            args.push(userName);
+        }
+    }
+    if(email) {
+        if(queryCondition == '') {
+            queryCondition += ` AND email=$${arg}`;
+            arg++;
+            args.push(email);
+        }
+        else {
+            queryCondition += ` OR email=$${arg}`;
+            arg++;
+            args.push(email);
+        }
+    }
+    let query = 'SELECT * FROM insiders WHERE status <> 0;';
+    if(queryCondition != '') {
+        query = 'SELECT * FROM insiders WHERE status <> 0' + queryCondition + ';';
+    }
+    const result = await pool.query(query, args);
+
+    return {status: 'ok', accounts: result.rows, count: result.rowCount};
+}
+
+async function newAdmin(userName, email, password) {
+    const pool = new Pool(config);
+
+    //Get current moment in epoch
+    let createdAt = Math.floor(new Date() / 1000);
+
+    let hash = bcrypt.hashSync(password, 10);
+
+    const result = await pool.query('INSERT INTO insiders (user_name, email, password, created_at, status) VALUES ($1,$2,$3,to_timestamp($4), $5)', [userName, email, hash, createdAt, 1]);
+
+    pool.end()
+
+    return {status: 'ok'};
+}
+
+async function updateAdmin(id, userName, email, password) {
+    const pool = new Pool(config);
+
+    const result = await pool.query('UPDATE insiders SET user_name=$1, email=$2, password=$3 WHERE id=$4',[userName,email,password,id]);
+
+    pool.end()
+
+    return {status: 'ok'};
+}
+
+async function deleteAdmin(id) {
+    const pool = new Pool(config);
+
+    const result = await pool.query('UPDATE insiders SET status=0 WHERE id=$1',[id]);
+
+    pool.end()
+
+    return {status: 'ok'};
+}
+
 async function login(email, password) {
     const pool = new Pool(config);
     const userQueryResult = await pool.query('SELECT * FROM users WHERE email=$1;',[email]);
-    const user = userQueryResult.rows[0];
-    if(bcrypt.compareSync(password, user.password)) {
-        return {status: 'ok', account: user};
+    try {
+        const user = userQueryResult.rows[0];
+        if(bcrypt.compareSync(password, user.password)) {
+            return {status: 'ok', account: user};
+        }
+        return {status: 'userError', message: 'Incorrect password'};
+    } catch (err) {
+        return {status: 'userError', message: "Account doesn't exist"};
     }
-    return {status: 'Incorrect password'};
+}
 
+async function loginAdmin(email, password) {
+    const pool = new Pool(config);
+    const userQueryResult = await pool.query('SELECT * FROM insiders WHERE email=$1;',[email]);
+    try {
+        const user = userQueryResult.rows[0];
+        if(bcrypt.compareSync(password, user.password)) {
+            return {status: 'ok', account: user};
+        }
+        return {status: 'userError', message: "Incorrect password"};
+    } catch (err) {
+        return {status: 'userError', message: "Account doesn't exist"};
+    }
 }
 
 module.exports.get_products = get_products;
@@ -647,4 +750,10 @@ module.exports.checkAvailability = checkAvailability;
 module.exports.updateAccount = updateAccount;
 module.exports.deleteAccount = deleteAccount;
 
+module.exports.getAdmin = getAdmin;
+module.exports.newAdmin = newAdmin;
+module.exports.updateAdmin = updateAdmin;
+module.exports.deleteAdmin = deleteAdmin;
+
 module.exports.login = login;
+module.exports.loginAdmin = loginAdmin;

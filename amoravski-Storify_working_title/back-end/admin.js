@@ -1,19 +1,19 @@
 /**
- * Account CRUD
+ * Admin account CRUD
  */
 
 const router = require('koa-router');
 const pg = require('./postgre.js');
-const accountRouter = router({
-    prefix: '/account'
+const adminRouter = router({
+    prefix: '/admin'
 });
 
-accountRouter.get('/', getAccounts);
-accountRouter.post('/', newAccount);
-accountRouter.put('/', updateAccount);
-accountRouter.delete('/', deleteAccount);
+adminRouter.get('/', getAdmins);
+adminRouter.post('/', newAdmin);
+adminRouter.put('/', updateAdmin);
+adminRouter.delete('/', deleteAdmin);
 
-async function getAccounts(ctx) {
+async function getAdmins(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     const filter = ctx.request.query ? ctx.request.query : {};
     id = filter.id;
@@ -22,8 +22,8 @@ async function getAccounts(ctx) {
 
     try {
         ctx.response.status = 200;
-        const resGetAccounts = await pg.getAccounts(id, userName, email);
-        ctx.response.body = resGetAccounts;
+        const resGetAdmins = await pg.getAdmins(id, userName, email);
+        ctx.response.body = resGetAdmins;
         return;
     } catch(err) {
         ctx.response.status = 500;
@@ -32,7 +32,7 @@ async function getAccounts(ctx) {
     }
 }
 
-async function newAccount(ctx) {
+async function newAdmin(ctx) {
     const params = ctx.request.body;
     try {
         const userName = params.userName;
@@ -58,9 +58,9 @@ async function newAccount(ctx) {
     }
 
     try {
-        const newAccountResult = await pg.newAccount(params.userName, params.email, params.password);
+        const newAdminResult = await pg.newAdmin(params.userName, params.email, params.password);
         ctx.response.status = 200;
-        ctx.body = newAccountResult;
+        ctx.body = newAdminResult;
         return;
     } catch(err) {
         ctx.response.status = 500;
@@ -70,7 +70,7 @@ async function newAccount(ctx) {
     }
 }
 
-async function updateAccount(ctx) {
+async function updateAdmin(ctx) {
     try {
         params = ctx.request.body;
         id = params.id
@@ -87,9 +87,9 @@ async function updateAccount(ctx) {
     }
 
     try {
-        const updateAccountResult = await pg.updateAccount(id, userName, email, password);
+        const updateAdminResult = await pg.updateAdmin(id, userName, email, password);
         ctx.response.status = 200;
-        ctx.body = updateAccountResult;
+        ctx.body = updateAdminResult;
         return;
     } catch(err) {
         ctx.response.status = 500;
@@ -99,13 +99,13 @@ async function updateAccount(ctx) {
     }
 }
 
-async function deleteAccount(ctx) {
+async function deleteAdmin(ctx) {
     const filter = ctx.request.query ? ctx.request.query : {};
     const id = filter.id;
     try {
-        const deleteAccountResult = await pg.deleteAccount(id);
+        const deleteAdminResult = await pg.deleteAdmin(id);
         ctx.response.status = 200;
-        ctx.body = deleteAccountResult;
+        ctx.body = deleteAdminResult;
         return;
     } catch(err) {
         ctx.response.status = 500;
@@ -115,4 +115,4 @@ async function deleteAccount(ctx) {
     }
 }
 
-module.exports = accountRouter;
+module.exports = adminRouter;
