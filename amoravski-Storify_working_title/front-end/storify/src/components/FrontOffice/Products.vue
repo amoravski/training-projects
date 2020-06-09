@@ -7,7 +7,7 @@
       <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price"/>
       to
       <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price"/>
-      lv.
+      €
       <label for="searchTerm"><b>Search: </b></label>
       <input style="width: 50rem;" v-model="searchTerm" type="text" id="searchTerm"/>
       <button v-on:click="search">Search</button>
@@ -277,7 +277,7 @@ export default {
     formatMoney (price) {
       const lv = Math.floor(price/100).toString();
       const st = Math.floor(price % 100).toString().padStart(2, '0');
-      const final_str = lv + ',' + st;
+      const final_str = '€' + lv + ',' + st;
       return final_str;
     },
 

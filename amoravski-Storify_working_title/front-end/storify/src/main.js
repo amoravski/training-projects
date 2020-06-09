@@ -4,6 +4,7 @@ import VueRouter from 'vue-router';
 import EmptyHeader from './components/EmptyHeader.vue';
 import Header from './components/FrontOffice/Header.vue';
 import Products from './components/FrontOffice/Products.vue';
+import Orders from './components/FrontOffice/Orders.vue';
 import Login from './components/FrontOffice/Login.vue';
 import Register from './components/FrontOffice/Register.vue';
 import BOHeader from './components/BackOffice/BOHeader';
@@ -21,6 +22,7 @@ Vue.use(VueRouter);
 const routes = [
     { path: '/', name: 'Header', component: Header },
     { path: '/products', name: 'Products', component: Products },
+    { path: '/orders', name: 'Products', component: Orders },
     { path: '/login', name: 'Login', component: Login },
     { path: '/register', name: 'Register', component: Register },
     { path: '/bo', name: 'BOHeader', component: BOHeader },

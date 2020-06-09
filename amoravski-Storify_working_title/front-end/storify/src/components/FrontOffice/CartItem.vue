@@ -36,8 +36,8 @@ export default {
 
     formatMoney (price, quantity) {
       const lv = Math.floor(quantity * this.cartItem.price/100).toString();
-      const st = Math.floor(this.cartItem.price % 100).toString().padStart(2, '0');
-      const final_str = lv + ',' + st;
+      const st = Math.floor(quantity * this.cartItem.price % 100).toString().padStart(2, '0');
+      const final_str = '€' + lv + ',' + st;
       return final_str;
     },
 

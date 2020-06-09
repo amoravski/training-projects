@@ -8,6 +8,7 @@ const router = require('koa-router');
 
 const product = require('./products.js');
 const account = require('./accounts.js');
+const admin = require('./admin.js');
 const paypal = require('./paypal.js');
 const order = require('./orders.js');
 const cart = require('./carts.js');
@@ -29,6 +30,7 @@ app.use(paypal.routes());
 app.use(order.routes());
 app.use(cart.routes());
 app.use(account.routes());
+app.use(admin.routes());
 app.use(authentication.routes());
 
 // OPTIONS requests
@@ -37,6 +39,7 @@ app.use(paypal.allowedMethods());
 app.use(order.allowedMethods());
 app.use(cart.allowedMethods());
 app.use(account.allowedMethods());
+app.use(admin.allowedMethods());
 app.use(authentication.routes());
 
 // Static files 

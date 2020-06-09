@@ -46,7 +46,7 @@ export default {
       let tags = this.product.tags.split(',');
       tags = tags.map((str) => { return str.trim();});
       formData.append("name", this.product.name);
-      formData.append("price", this.product.price);
+      formData.append("price", Math.floor(this.product.price * 100));
       formData.append("quantity", this.product.quantity);
       formData.append("tags", JSON.stringify(tags));
       formData.append("file", this.product.file);
