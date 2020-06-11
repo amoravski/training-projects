@@ -41,7 +41,7 @@ async function create_order(ctx) {
         let response = await client.execute(request);
         let resp_order = JSON.parse(JSON.stringify(response.result));
         for(let i=0; i<cart.length; i++) {
-            let order_response = await pg.create_order(cart[i].product_id, cart[i].quantity, cart[i].price, resp_order.id);
+            let order_response = await pg.create_order(cart[i].product_id, cart[i].quantity, cart[i].price, resp_order.id, params.userId);
         }
         ctx.response.status = 200;
         ctx.body = { status: "ok", order: JSON.stringify(response.result)};

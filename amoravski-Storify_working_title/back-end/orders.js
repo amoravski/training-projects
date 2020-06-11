@@ -13,7 +13,7 @@ async function getOrders(ctx) {
     const filter = ctx.request.query ? ctx.request.query : {};
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
-        const orderListResult = await pg.getOrders(filter.id,filter.name,filter.tag,filter.lowerPrice,filter.upperPrice,filter.sort,filter.ord,filter.limit,filter.offset);
+        const orderListResult = await pg.getOrders(filter.id,filter.name,filter.tag,filter.lowerPrice,filter.upperPrice,filter.sort,filter.ord,filter.limit,filter.offset,filter.userId);
         ctx.response.status = 200;
         ctx.body = orderListResult;
         return;

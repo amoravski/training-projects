@@ -300,7 +300,7 @@ async function remove_product(id) {
 }
 
 
-async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset) {
+async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset, userId) {
     //Open connection
     const pool = new Pool(config);
 
@@ -335,15 +335,34 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset
         args.push(name);
     }
 
+    // user id filtering
+    if(userId){
+        if(!appended) {
+            query_string += ` AND`;
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` orders.user_id = $${arg}`;
+            appended = true;
+            or_brace_flag = true;
+        }
+        else {
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` OR orders.user_id = $${arg}`;
+            or_brace_flag = true;
+        }
+        arg++;
+        args.push(userId);
+    }
+
+
     // Price Upper and Lower Bound filtering
     if(lowerPrice) {
         if(!appended) {
-            query_string += ` AND (orders.quantity * orders.value) >= $${arg}`;
+            query_string += ` AND orders.value >= $${arg}`;
             appended = true;
         }
         else {
             query_string += or_brace_flag ? ')' : '';
-            query_string += ` AND (orders.quantity * orders.value) >= $${arg}`;
+            query_string += ` AND orders.value >= $${arg}`;
             or_brace_flag = false;
         }
         arg++;
@@ -351,12 +370,12 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset
     }
     if(upperPrice) {
         if(!appended) {
-            query_string += ` AND (orders.quantity * orders.value) <= $${arg}`;
+            query_string += ` AND orders.value <= $${arg}`;
             appended = true;
         }
         else {
             or_brace_flag += or_brace_flag ? ')' : '';
-            query_string += ` AND (orders.quantity * orders.value) <= $${arg}`;
+            query_string += ` AND orders.value <= $${arg}`;
             or_brace_flag = false;
         }
         arg++;
@@ -376,10 +395,10 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset
             query_string+=('products.name');
             break;
         case 'value':
-            query_string+=('products.value');
+            query_string+=('orders.value');
             break;
         case 'quantity':
-            query_string+=('products.quantity');
+            query_string+=('orders.quantity');
             break;
         case 'timestamp':
             query_string+=('orders.started_at');
@@ -426,13 +445,13 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset
     return {status: "ok", orders: output, count: count};
 }
 
-async function create_order(product_id, quantity, value, paypal_id) {
+async function create_order(product_id, quantity, value, paypal_id, userId) {
     const pool = new Pool(config);
 
     //Get current moment in epoch
     let created_at = Math.floor(new Date() / 1000);
 
-    const result = await pool.query(`INSERT INTO orders (user_id, product_id, status, quantity, value, started_at, paypal_id) VALUES ($1,$2,$3,$4,$5, to_timestamp($6),$7) RETURNING id;`, [ 1 ,product_id, 1 ,quantity,value,created_at,paypal_id]);
+    const result = await pool.query(`INSERT INTO orders (user_id, product_id, status, quantity, value, started_at, paypal_id) VALUES ($1,$2,$3,$4,$5, to_timestamp($6),$7) RETURNING id;`, [ userId ,product_id, 1 ,quantity,value,created_at,paypal_id]);
     const result_update = await pool.query('UPDATE products SET quantity = quantity - $1 WHERE id=$2', [quantity,product_id]);
 
     // Close connection
