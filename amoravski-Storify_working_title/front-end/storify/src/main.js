@@ -22,7 +22,7 @@ Vue.use(VueRouter);
 const routes = [
     { path: '/', name: 'Header', component: Header },
     { path: '/products', name: 'Products', component: Products },
-    { path: '/orders', name: 'Products', component: Orders },
+    { path: '/orders', name: 'Orders', component: Orders },
     { path: '/login', name: 'Login', component: Login },
     { path: '/register', name: 'Register', component: Register },
     { path: '/bo', name: 'BOHeader', component: BOHeader },
