@@ -176,11 +176,11 @@ export default {
       this.priceSort = true;
       if(this.asc) {
         this.asc = false;
-        this.searchTerm();
+        this.search();
         return
       }
       this.asc = true;
-      this.searchTerm();
+      this.search();
       return
     },
 
@@ -211,7 +211,7 @@ export default {
 
     buyCart: function () {
       let url = `http://localhost:3000/paypal`
-      axios({ method:"POST", "url": url, data: {user_id: this.user_id, cart: this.cart}}).then(result => {
+      axios({ method:"POST", "url": url, data: {userId: this.user_id, cart: this.cart}}).then(result => {
         let parsed = JSON.parse(JSON.stringify(result.data));
         this.order_id = parsed.order_id; 
         let parsed_order = JSON.parse(parsed.order);

@@ -40,6 +40,8 @@
 
 <script>
 import axios from 'axios';
+import jwt_decode from 'jwt-decode';
+
 import Order from './Order.vue';
 import Header from './Header.vue';
 
@@ -59,10 +61,15 @@ export default {
       asc: false,
       nameSort: false,
       priceSort: false,
+      userId: null
     };
   },
 
   mounted () {
+    if(typeof localStorage.getItem('JWT_account_storify') != undefined && localStorage.getItem('JWT_account_storify') != null) {
+      this.jwt = localStorage.getItem('JWT_account_storify');
+      this.userId = jwt_decode(this.jwt).id;
+    }
     this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
   },
 
@@ -75,9 +82,7 @@ export default {
     getOrders: function (name, tag, lowerPrice, upperPrice) {
       // Build url
       const backendurl = 'http://localhost:3000/';
-      let url = backendurl + `order?offset=${this.page*10}&limit=10`;
-      url += name ? `&name=${name}` : '';
-      url += tag ? `&tag=${tag}` : '';
+      let url = backendurl + `order?offset=${this.page*10}&limit=10&userId=${this.userId}`;
       url += this.nameSort ? `&sort=name` : '';
       url += this.priceSort ? `&sort=price` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';

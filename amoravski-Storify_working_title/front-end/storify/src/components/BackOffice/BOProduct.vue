@@ -66,7 +66,7 @@ export default {
     formatMoney () {
       const lv = Math.floor(this.product.price/100).toString();
       const st = Math.floor(this.product.price % 100).toString().padStart(2, '0');
-      const final_str = lv + ',' + st + ' лв.';
+      const final_str = '€' + lv + ',' + st;
       return final_str;
     },
 

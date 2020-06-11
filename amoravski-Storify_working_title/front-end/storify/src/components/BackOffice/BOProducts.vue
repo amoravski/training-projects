@@ -7,7 +7,7 @@
         <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
         to
         <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
-        lv.
+        €
       </div>
         <label for="filter"><b>Search: </b></label>
         <input v-model="filter" type="text" id="filter"/>
@@ -18,7 +18,7 @@
         <table>
             <thead>
               <tr>
-                <th>ID</th>
+                <th v-on:click="sortProductsIdAlternating">ID</th>
                 <th v-on:click="sortProductsNameAlternating">Name</th>
                 <th v-on:click="sortProductsPriceAlternating">Price</th>
                 <th>Quantity</th>
@@ -48,7 +48,7 @@ export default {
   name: 'BOProducts',
   components: {Header, BOProduct, BONewProductForm},
   data () {
-    return { products : [], filter : "", empty: false, newForm: false, lowerPrice: 0, upperPrice: 0, filters: false, nameSort: true, priceSort: true, page: 0, count:0}
+    return { products : [], filter : "", empty: false, newForm: false, lowerPrice: 0, upperPrice: 0, filters: false, sort: '', page: 0, count:0}
   },
   mounted () {
     this.getProducts('','');
@@ -63,19 +63,11 @@ export default {
     },
     getProducts: function (name, tag, lowerPrice, upperPrice) {
       var url = `http://localhost:3000/product?offset=${this.page*10}&limit=10`
-      var appended = true
-      if (name) {
-        url += appended ? `&name=${name}` : `?name=${name}`
-        appended = true
-      }
-      if (tag) {
-        url += appended ? `&tag=${tag}` : `?tag=${tag}`
-        appended = true
-      }
-      if (upperPrice > 0){
-        url += appended ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : `?lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}`
-        appended = true
-      }
+      url += name ? `&name=${name}` : '';
+      url += tag ? `&tag=${tag}` : '';
+      url += this.sort ? `&sort=${this.sort}` : '';
+      url += this.asc ? `&ord=asc` : '&ord=desc';
+      url += upperPrice > 0 ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : '';
       url += this.count ? '&returnCount=false' : '&returnCount=true';
       axios({ method:"GET", "url": url}).then(result => {
         var parsed = JSON.parse(JSON.stringify(result.data));
@@ -93,62 +85,31 @@ export default {
         console.log(error);
       });
     },
-    sortProductsNameAlternating: function () {
-      if(this.nameSort) {
-        this.nameSort = false;
-        this.sortProductsNameAscending();
-        return
-      }
-      this.nameSort = true;
-      this.sortProductsNameDescending();
-      return
-    },
-    sortProductsNameAscending: function () {
-     function compareNameAscending(a, b) {
-        return (a.name).localeCompare(b.name);
-     }
-     this.products = this.products.sort(compareNameAscending);
-    },
-    sortProductsNameDescending: function () {
-     function compareNameDescending(a, b) {
-        return (b.name).localeCompare(a.name);
-     }
-     this.products = this.products.sort(compareNameDescending);
-    },
+
     sortProductsPriceAlternating: function () {
-      if(this.priceSort) {
-        this.priceSort = false;
-        this.sortProductsPriceAscending();
-        return
-      }
-      this.priceSort = true;
-      this.sortProductsPriceDescending();
+      this.page = 0;
+      this.sort = 'value'
+      this.asc = !this.asc
+      this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
       return
     },
-    sortProductsPriceAscending: function () {
-     function comparePriceAscending(a, b) {
-        if ( a.price < b.price ){
-         return -1;
-        }
-        if ( a.price > b.price ){
-         return 1;
-        }
-       return 0;
-     }
-     this.products = this.products.sort(comparePriceAscending);
+
+    sortProductsIdAlternating: function () {
+      this.page = 0;
+      this.sort = 'id'
+      this.asc = !this.asc
+      this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
+      return
     },
-    sortProductsPriceDescending: function () {
-     function comparePriceDescending(a, b) {
-        if ( a.price < b.price ){
-         return 1;
-        }
-        if ( a.price > b.price ){
-         return -1;
-        }
-       return 0;
-     }
-     this.products = this.products.sort(comparePriceDescending);
+
+    sortProductsNameAlternating: function () {
+      this.page = 0;
+      this.sort = 'name'
+      this.asc = !this.asc
+      this.getProducts(this.filter,this.filter, this.lowerPrice, this.upperPrice);
+      return
     },
+
     removeProduct: function (event) {
       var url = `http://localhost:3000/product?id=${event}`
       axios({ method:"DELETE", "url": url}).then(() => { this.getProducts(this.filter, this.filter);

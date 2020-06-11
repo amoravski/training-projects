@@ -5,6 +5,7 @@
       <div v-if="loggedIn" style="float:right;">
         Welcome, {{ userName }}
         <router-link tag="button" class="router_link" to="/products">Products</router-link> 
+        <router-link tag="button" class="router_link" to="/orders">My Orders</router-link> 
         <button v-on:click="logout">Logout</button>
       </div>
       <div v-if="!loggedIn" style="float:right;">
@@ -43,7 +44,7 @@ export default {
       if(typeof localStorage.getItem('JWT_account_storify') != undefined && localStorage.getItem('JWT_account_storify') != null) {
         localStorage.removeItem('JWT_account_storify');
         this.loggedIn = false;
-        window.location.reload();
+        this.$router.push({ name: 'Products'});
       }
     }
   }

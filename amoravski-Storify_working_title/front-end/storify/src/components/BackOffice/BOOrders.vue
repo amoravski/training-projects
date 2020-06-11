@@ -7,7 +7,7 @@
         <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
         to
         <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
-        lv.
+        €
       </div>
       <label for="searchTerm"><b>Search: </b></label>
       <input v-model="searchTerm" type="text" id="searchTerm"/>
@@ -15,11 +15,12 @@
     <table>
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th style="text-align:right">Value(total)</th>
+            <th v-on:click="sortProductsDateAlternating">Started at</th>
+            <th v-on:click="sortProductsIdAlternating">ID</th>
+            <th v-on:click="sortProductsNameAlternating">Name</th>
+            <th v-on:click="sortProductsPriceAlternating" style="text-align:right">Value</th>
             <th>Quantity</th>
-            <th>Started at</th>
+            <th style="text-align:right">Value(total)</th>
             <th>Status</th>
             <th></th>
             <th>Actions</th>
@@ -61,6 +62,7 @@ export default {
       asc: false,
       nameSort: false,
       priceSort: false,
+      sort: ''
     };
   },
 
@@ -79,8 +81,9 @@ export default {
       let url = backendurl + `order?offset=${this.page*10}&limit=10`;
       url += name ? `&name=${name}` : '';
       url += tag ? `&tag=${tag}` : '';
-      url += this.nameSort ? `&sort=name` : '';
-      url += this.priceSort ? `&sort=price` : '';
+      url += this.sort ? `&sort=${this.sort}` : '';
+      //url += this.nameSort ? `&sort=name` : '';
+      //url += this.priceSort ? `&sort=value` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';
       url += upperPrice > 0 ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : '';
       // Make request
@@ -124,6 +127,37 @@ export default {
       });
     },
 
+    sortProductsNameAlternating: function () {
+      this.page = 0;
+      this.sort = 'name'
+      this.asc = !this.asc
+      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      return
+    },
+
+    sortProductsPriceAlternating: function () {
+      this.page = 0;
+      this.sort = 'value'
+      this.asc = !this.asc
+      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      return
+    },
+
+    sortProductsIdAlternating: function () {
+      this.page = 0;
+      this.sort = 'id'
+      this.asc = !this.asc
+      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      return
+    },
+
+    sortProductsDateAlternating: function () {
+      this.page = 0;
+      this.sort = 'timestamp'
+      this.asc = !this.asc
+      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      return
+    },
     goForwardsPage: function() {
       this.page++;
       this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
