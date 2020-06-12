@@ -7,7 +7,7 @@
         <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
         to
         <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
-        euro
+        €
       </div>
       <label for="searchTerm"><b>Search: </b></label>
       <input v-model="searchTerm" type="text" id="searchTerm"/>
@@ -15,11 +15,11 @@
     <table>
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th style="text-align:right">Value(total)</th>
+            <th v-on:click="sortProductsDateAlternating">Started at</th>
+            <th v-on:click="sortProductsNameAlternating">Name</th>
+            <th v-on:click="sortProductsPriceAlternating" style="text-align:right">Value</th>
             <th>Quantity</th>
-            <th>Started at</th>
+            <th style="text-align:right">Value(total)</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -59,8 +59,7 @@ export default {
       page: 0,
       ordersCount: 0,
       asc: false,
-      nameSort: false,
-      priceSort: false,
+      sort: '',
       userId: null
     };
   },
@@ -83,9 +82,8 @@ export default {
       // Build url
       const backendurl = 'http://localhost:3000/';
       let url = backendurl + `order?offset=${this.page*10}&limit=10&userId=${this.userId}`;
-      url += this.nameSort ? `&sort=name` : '';
-      url += this.priceSort ? `&sort=price` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';
+      url += this.sort ? `&sort=${this.sort}` : '';
       url += upperPrice > 0 ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : '';
       // Make request
       axios({ method:"GET", "url": url})
@@ -107,25 +105,28 @@ export default {
         );
     },
 
-    removeOrder: function (event) {
-      var url = `http://localhost:3000/order?id=${event}`
-      axios({ method:"DELETE", "url": url}).then(() => { 
-          this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
-        }
-      , error => {
-        console.log(error);
-      });
+    sortProductsNameAlternating: function () {
+      this.page = 0;
+      this.sort = 'name'
+      this.asc = !this.asc
+      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      return
     },
 
-    updateOrder: function(event) {
-      this.newForm = false;
-      var url = `http://localhost:3000/order`
-      axios({ method:"PUT", "url": url, data: event}).then(() => {
-          this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
-        }
-      , error => {
-        console.log(error);
-      });
+    sortProductsPriceAlternating: function () {
+      this.page = 0;
+      this.sort = 'value'
+      this.asc = !this.asc
+      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      return
+    },
+
+    sortProductsDateAlternating: function () {
+      this.page = 0;
+      this.sort = 'timestamp'
+      this.asc = !this.asc
+      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      return
     },
 
     goForwardsPage: function() {

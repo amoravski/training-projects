@@ -1,34 +1,68 @@
 <template>
   <div id="orders">
-      <Header />
-      <h2>Orders</h2>
-      <div class="bordered">
-        Price filter: from
-        <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price" min=0/>
-        to
-        <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price" min=0/>
-        €
-      </div>
-      <label for="searchTerm"><b>Search: </b></label>
-      <input v-model="searchTerm" type="text" id="searchTerm"/>
-      <button v-on:click="search">Search</button>
+    <Header />
+    <h2>Orders</h2>
+
+    <div>
+      Date filter: from
+      <input v-model="date.lower" type="date" id="lower-date" />
+      <input v-model="time.lower" type="time" id="lower-time" />
+      to
+      <input v-model="date.upper" type="date" id="upper-date" />
+      <input v-model="time.upper" type="time" id="upper-time" />
+    </div>
+
+
+    <div>
+      <label for="idFilter"><b>Id search: </b></label>
+      <input style="width: 40rem;" v-model="idFilter" type="text" id="idFilter"/>
+      <label for="nameFilter"><b>Name search: </b></label>
+      <input style="width: 40rem;" v-model="nameFilter" type="text" id="nameFilter"/>
+    </div>
+
+    <div>
+      Price filter: from
+      <input style="width: 10rem;" v-model="priceFilter.lower" type="number" id="lower-price" min=0/>
+      to
+      <input style="width: 10rem;" v-model="priceFilter.upper" type="number" id="upper-price" min=0/>
+      €
+    </div>
+
+    <div>
+      Quantity filter: from
+      <input style="width: 10rem;" v-model="quantityFilter.lower" type="number" id="lower-quantity" min=0 step=1/>
+      to
+      <input style="width: 10rem;" v-model="quantityFilter.upper" type="number" id="upper-quantity" min=0 step=1/>
+    </div>
+
+    <div>
+      <label for="statusFilter"><b>Status: </b></label>
+      <select style="width: 40rem;" id="statusFilter" v-model="statusFilter">
+        <option value="created">Created</option>
+        <option value="confirmed">Confirmed</option>
+        <option value=""></option>
+      </select >
+    </div>
+
+    <button v-on:click="search">Search</button>
+
     <table>
-        <thead>
-          <tr>
-            <th v-on:click="sortProductsDateAlternating">Started at</th>
-            <th v-on:click="sortProductsIdAlternating">ID</th>
-            <th v-on:click="sortProductsNameAlternating">Name</th>
-            <th v-on:click="sortProductsPriceAlternating" style="text-align:right">Value</th>
-            <th>Quantity</th>
-            <th style="text-align:right">Value(total)</th>
-            <th>Status</th>
-            <th></th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <BOOrder @updated="updateOrder" @removed="removeOrder"  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
-        </tbody>
+      <thead>
+        <tr>
+          <th v-on:click="sortProductsDateAlternating">Started at</th>
+          <th v-on:click="sortProductsIdAlternating">ID</th>
+          <th v-on:click="sortProductsNameAlternating">Name</th>
+          <th v-on:click="sortProductsPriceAlternating" style="text-align:right">Value</th>
+          <th>Quantity</th>
+          <th style="text-align:right">Value(total)</th>
+          <th>Status</th>
+          <th></th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <BOOrder @updated="updateOrder" @removed="removeOrder"  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
+      </tbody>
     </table>
 
     <!--Pages-->
@@ -53,39 +87,57 @@ export default {
   data () {
     return {
       orders : [], 
-      searchTerm : "",
+      nameFilter : "",
+      idFilter : "",
+      statusFilter : "",
       empty: false,
-      lowerPrice: 0,
-      upperPrice: 0,
+      priceFilter: {
+        lower: 0,
+        upper: 0,
+      },
+      quantityFilter : {
+        lower: 0,
+        upper: 0,
+      },
+      date: {
+        lower: '',
+        upper: '',
+      },
+      time: {
+        lower: '',
+        upper: '',
+      },
       page: 0,
       ordersCount: 0,
       asc: false,
-      nameSort: false,
-      priceSort: false,
       sort: ''
     };
   },
 
   mounted () {
-    this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+    this.getOrders();
   },
   methods: {
     search: function () {
       this.page = 0;
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getOrders();
     },
 
-    getOrders: function (name, tag, lowerPrice, upperPrice) {
+    getOrders: function () {
       // Build url
       const backendurl = 'http://localhost:3000/';
       let url = backendurl + `order?offset=${this.page*10}&limit=10`;
-      url += name ? `&name=${name}` : '';
-      url += tag ? `&tag=${tag}` : '';
+
+      url += this.name ? `&name=${this.name}` : '';
+      url += this.nameFilter ? `&name=${this.nameFilter}` : '';
+      url += this.idFilter ? `&id=${this.idFilter}` : '';
+      url += this.statusFilter ? `&status=${this.statusFilter}` : '';
+
       url += this.sort ? `&sort=${this.sort}` : '';
-      //url += this.nameSort ? `&sort=name` : '';
-      //url += this.priceSort ? `&sort=value` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';
-      url += upperPrice > 0 ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : '';
+      url += this.priceFilter.upper > 0 ? `&lowerPrice=${this.priceFilter.lower * 100}&upperPrice=${this.priceFilter.upper * 100}` : '';
+      url += this.quantityFilter.upper > 0 ? `&lowerQuantity=${this.quantityFilter.lower}&upperQuantity=${this.quantityFilter.upper}` : '';
+      url += this.date.upper && this.time.upper ? `&lowerDate=${this.date.lower + 'T' +this.time.lower}&upperDate=${this.date.upper + 'T' +this.time.upper}` : '';
       // Make request
       axios({ method:"GET", "url": url})
         .then(
@@ -109,7 +161,7 @@ export default {
     removeOrder: function (event) {
       var url = `http://localhost:3000/order?id=${event}`
       axios({ method:"DELETE", "url": url}).then(() => { 
-          this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+          this.getOrders();
         }
       , error => {
         console.log(error);
@@ -120,7 +172,7 @@ export default {
       this.newForm = false;
       var url = `http://localhost:3000/order`
       axios({ method:"PUT", "url": url, data: event}).then(() => {
-          this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+          this.getOrders();
         }
       , error => {
         console.log(error);
@@ -131,7 +183,7 @@ export default {
       this.page = 0;
       this.sort = 'name'
       this.asc = !this.asc
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getOrders();
       return
     },
 
@@ -139,7 +191,7 @@ export default {
       this.page = 0;
       this.sort = 'value'
       this.asc = !this.asc
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getOrders();
       return
     },
 
@@ -147,7 +199,7 @@ export default {
       this.page = 0;
       this.sort = 'id'
       this.asc = !this.asc
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getOrders();
       return
     },
 
@@ -155,18 +207,18 @@ export default {
       this.page = 0;
       this.sort = 'timestamp'
       this.asc = !this.asc
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getOrders();
       return
     },
     goForwardsPage: function() {
       this.page++;
-      this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+      this.getOrders();
     },
 
     goBackwardsPage: function() {
       if(this.page>0) {
         this.page--;
-        this.getOrders(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
+        this.getOrders();
       }
     },
   }

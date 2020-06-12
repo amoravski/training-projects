@@ -1,10 +1,10 @@
 <template>
     <tr>
-      <td>{{ order.id }}</td>
-      <td>{{ order.name }}</td>
-      <td style="text-align:right">{{ formatMoney() }} </td>
-      <td>{{ order.quantity }}</td>
       <td>{{ formatDate() }}</td>
+      <td>{{ order.name }}</td>
+      <td style="text-align:right">{{ formatMoney(order.value, 1) }} </td>
+      <td>{{ order.quantity }}</td>
+      <td style="text-align:right">{{ formatMoney(order.value, order.quantity) }} </td>
       <td>{{ order.status_name }}</td>
     </tr>
 </template>
@@ -20,11 +20,11 @@ export default {
   },
 
   methods: {
-    formatMoney () {
-      const total_money = this.order.value*this.order.quantity;
+    formatMoney (value, quantity) {
+      const total_money = value*quantity;
       const lv = Math.floor(total_money / 100).toString();
       const st = Math.floor(total_money % 100).toString().padStart(2, '0');
-      const final_str = lv + ',' + st + ' лв.';
+      const final_str = '€' + lv + ',' + st;
       return final_str;
     },
 
