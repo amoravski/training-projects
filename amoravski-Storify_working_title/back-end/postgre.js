@@ -29,13 +29,15 @@ const config = {
  * @param {Integer} offset : If present, offsets returned rows
  * @return {Object} : Object with field products (restricted by LIMIT) and field count(all products matching the query)
  */
-async function get_products(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset,returnCount) {
+async function get_products(id,name,tag,lowerPrice,upperPrice,lowerQuantity,upperQuantity,sort,ord,limit,offset,returnCount) {
     // Connect to DB
     const pool = new Pool(config);
 
     // Build up the formatted query
-    let query_string = 'SELECT products.id,products.name,products.price,products.quantity,json_agg(tag_names.tag_name),products.created_at,products.picture_path FROM products INNER JOIN tags ON products.id = tags.product LEFT OUTER JOIN tag_names ON tags.tag_name = tag_names.id WHERE products.quantity > 0 AND products.status <> \'removed\' ';
+    let query_string = 'SELECT products.id,products.name,products.price,products.quantity,json_agg(tag_names.tag_name),products.created_at,products.picture_path FROM products INNER JOIN tags ON products.id = tags.product LEFT OUTER JOIN tag_names ON tags.tag_name = tag_names.id WHERE products.quantity > 0 AND products.status <> \'removed\'';
 
+    //We need the whole brace and OR business because otherwise we could bypass the hard limits like
+    //not returning removed products
     //Flag to control if AND was appended already
     let appended = false;
     //Flag to control if and when braces are appended
@@ -45,6 +47,14 @@ async function get_products(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,off
     let args = [];
     // Number of current arg
     let arg = 1;
+
+    // ID filtering, no or braces to make it specific
+    if(id){
+        query_string += ` AND`;
+        query_string += ` products.id = $${arg}`;
+        arg++;
+        args.push(id);
+    }
 
     // Name filtering
     if(name){
@@ -110,6 +120,33 @@ async function get_products(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,off
         args.push(upperPrice);
     }
 
+    // Quantity Upper and Lower Bound filtering
+    if(lowerQuantity) {
+        if(!appended) {
+            query_string += ` AND products.quantity >= $${arg}`;
+            appended = true;
+        }
+        else {
+            query_string += or_brace_flag ? ')' : '';
+            query_string += ` AND products.quantity >= $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(lowerQuantity);
+    }
+    if(upperQuantity) {
+        if(!appended) {
+            query_string += ` AND products.quantity <= $${arg}`;
+            appended = true;
+        }
+        else {
+            or_brace_flag += or_brace_flag ? ')' : '';
+            query_string += ` AND products.quantity <= $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(upperQuantity);
+    }
     // Closes brackets if they were still open
     query_string += or_brace_flag ? ')' : '';
 
@@ -135,12 +172,13 @@ async function get_products(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,off
             query_string+=('products.created_at');
             break;
         default:
-            query_string+=('products.name');
+            query_string+=('products.id');
     }
+
     if(ord=="desc") {
         query_string += ' DESC';
     }
-    else if(ord=="asc") {
+    else{
         query_string += ' ASC';
     }
 
@@ -300,12 +338,12 @@ async function remove_product(id) {
 }
 
 
-async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset, userId) {
+async function getOrders(id,name,tag,lowerPrice,upperPrice,lowerQuantity,upperQuantity, lowerDate, upperDate, sort,ord,limit,offset, userId, status) {
     //Open connection
     const pool = new Pool(config);
 
     // Build up the formatted query
-    let query_string = 'SELECT orders.id, products.name, orders.value, orders.quantity, orders.started_at, order_statuses.status_name FROM orders INNER JOIN products ON orders.product_id = products.id INNER JOIN order_statuses ON orders.status = order_statuses.id WHERE orders.status <> 4';
+    let query_string = "SELECT orders.id, products.name, orders.value, orders.quantity, orders.started_at, order_statuses.status_name FROM orders INNER JOIN products ON orders.product_id = products.id INNER JOIN order_statuses ON orders.status = order_statuses.id WHERE order_statuses.status_name <> 'deleted'";
 
     //Flag to control if AND was appended already
     let appended = false;
@@ -316,6 +354,19 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset
     let args = [];
     // Number of current arg
     let arg = 1;
+
+    // ID filtering
+    if(id){
+        query_string += ` AND orders.id = $${arg}`;
+        arg++;
+        args.push(id);
+    }
+
+    if(status) {
+        query_string += ` AND order_statuses.status_name = $${arg}`;
+        arg++;
+        args.push(status);
+    }
 
     // Name filtering
     if(name){
@@ -382,6 +433,61 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,sort,ord,limit,offset
         args.push(upperPrice);
     }
 
+    // Quantity Upper and Lower Bound filtering
+    if(lowerQuantity) {
+        if(!appended) {
+            query_string += ` AND orders.quantity >= $${arg}`;
+            appended = true;
+        }
+        else {
+            query_string += or_brace_flag ? ')' : '';
+            query_string += ` AND orders.quantity >= $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(lowerQuantity);
+    }
+    if(upperQuantity) {
+        if(!appended) {
+            query_string += ` AND orders.quantity <= $${arg}`;
+            appended = true;
+        }
+        else {
+            or_brace_flag += or_brace_flag ? ')' : '';
+            query_string += ` AND orders.quantity <= $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(upperQuantity);
+    }
+
+    // Date Upper and Lower Bound filtering
+    if(lowerDate) {
+        if(!appended) {
+            query_string += ` AND orders.started_at >= $${arg}`;
+            appended = true;
+        }
+        else {
+            query_string += or_brace_flag ? ')' : '';
+            query_string += ` AND orders.started_at >= $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(lowerDate);
+    }
+    if(upperDate) {
+        if(!appended) {
+            query_string += ` AND orders.started_at <= $${arg}`;
+            appended = true;
+        }
+        else {
+            or_brace_flag += or_brace_flag ? ')' : '';
+            query_string += ` AND orders.started_at <= $${arg}`;
+            or_brace_flag = false;
+        }
+        arg++;
+        args.push(upperDate);
+    }
     // Closes brackets if they were still open
     query_string += or_brace_flag ? ')' : '';
 

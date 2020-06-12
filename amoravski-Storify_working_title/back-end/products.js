@@ -28,7 +28,20 @@ async function get_products(ctx) {
 
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
-        const product_list_result = await pg.get_products(filter.id,filter.name,filter.tag,filter.lowerPrice,filter.upperPrice,filter.sort,filter.ord,filter.limit,filter.offset,filter.returnCount);
+        const product_list_result = await pg.get_products(
+            filter.id,
+            filter.name,
+            filter.tag,
+            filter.lowerPrice,
+            filter.upperPrice,
+            filter.lowerQuantity,
+            filter.upperQuantity,
+            filter.sort,
+            filter.ord,
+            filter.limit,
+            filter.offset,
+            filter.returnCount
+        );
         ctx.response.status = 200;
         ctx.body = product_list_result;
         return;
@@ -125,7 +138,8 @@ async function update_product(ctx) {
 async function remove_product(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
 
-    params = ctx.request.query;
+    var params = ctx.request.query;
+
     if(!(params.id)) {
         ctx.response.status = 400;
         ctx.body = {status:"userError", message: "Missing parameter"};
