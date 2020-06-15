@@ -2,7 +2,9 @@
     <tr>
       <td>{{ formatDate() }}</td>
       <td>{{ order.id }}</td>
+      <td>{{ order.paypal_id }}</td>
       <td>{{ order.name }}</td>
+      <td>{{ order.user_name }}</td>
       <td style="text-align:right">{{ formatMoney(order.value, 1) }} </td>
       <td>{{ order.quantity }}</td>
       <td style="text-align:right">{{ formatMoney(order.value, order.quantity) }} </td>
@@ -19,12 +21,12 @@
           {{updateFormActive ? "Close Form" : "Edit"}}
         </button>
       </td>
-      <BOUpdateOrderForm v-if="updateFormActive" />
+      <BOUpdateOrderForm @update="updated" v-if="updateFormActive" :order="order" />
     </tr>
 </template>
 
 <script>
-import BOUpdateOrderForm from './BOUpdateProductForm.vue';
+import BOUpdateOrderForm from './BOUpdateOrderForm.vue';
 
 export default {
   name: 'BOOrder',

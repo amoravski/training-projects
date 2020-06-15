@@ -10,9 +10,6 @@
         <button v-on:click="logout">Logout</button>
       </div>
       <div v-if="!loggedIn" style="float:right;">
-        <router-link tag="button" class="router_link" to="/boproducts">Products</router-link>
-        <router-link tag="button" class="router_link" to="/boorders">Orders</router-link>
-        <router-link tag="button" class="router_link" to="/bousers">Users</router-link>
         <router-link tag="button" class="router_link" to="/bologin">Login</router-link>
         <router-link tag="button" class="router_link" to="/boregister">Register</router-link>
       </div>
@@ -34,19 +31,19 @@ export default {
     }
   },
   mounted () {
-    if(typeof localStorage.getItem('JWT_account_storify') != undefined && localStorage.getItem('JWT_account_storify') != null) {
+    if(typeof localStorage.getItem('JWT_admin_account_storify') != undefined && localStorage.getItem('JWT_admin_account_storify') != null) {
       this.loggedIn = true;
-      let jwt = localStorage.getItem('JWT_account_storify');
+      let jwt = localStorage.getItem('JWT_admin_account_storify');
       this.userName = jwt_decode(jwt).userName;
     }
   },
 
   methods: {
     logout: function () {
-      if(typeof localStorage.getItem('JWT_account_storify') != undefined && localStorage.getItem('JWT_account_storify') != null) {
-        localStorage.removeItem('JWT_account_storify');
+      if(typeof localStorage.getItem('JWT_admin_account_storify') != undefined && localStorage.getItem('JWT_admin_account_storify') != null) {
+        localStorage.removeItem('JWT_admin_account_storify');
         this.loggedIn = false;
-        window.location.reload();
+        this.$router.push({ name: 'BOLogin'});
       }
     }
   }

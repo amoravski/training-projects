@@ -16,8 +16,12 @@
     <div>
       <label for="idFilter"><b>Id search: </b></label>
       <input style="width: 40rem;" v-model="idFilter" type="text" id="idFilter"/>
-      <label for="nameFilter"><b>Name search: </b></label>
+      <label for="orderIdFilter"><b>Order id search: </b></label>
+      <input style="width: 40rem;" v-model="orderIdFilter" type="text" id="orderIdFilter"/>
+      <label for="nameFilter"><b>Product name search: </b></label>
       <input style="width: 40rem;" v-model="nameFilter" type="text" id="nameFilter"/>
+      <label for="userNameFilter"><b>User name search: </b></label>
+      <input style="width: 40rem;" v-model="userNameFilter" type="text" id="userNameFilter"/>
     </div>
 
     <div>
@@ -38,8 +42,10 @@
     <div>
       <label for="statusFilter"><b>Status: </b></label>
       <select style="width: 40rem;" id="statusFilter" v-model="statusFilter">
-        <option value="created">Created</option>
-        <option value="confirmed">Confirmed</option>
+        <option value="not_paid">Not paid</option>
+        <option value="paid">Paid</option>
+        <option value="payment_rejected">Payment Rejected</option>
+        <option value="dispatched">Dispatched</option>
         <option value=""></option>
       </select >
     </div>
@@ -51,7 +57,9 @@
         <tr>
           <th v-on:click="sortProductsDateAlternating">Started at</th>
           <th v-on:click="sortProductsIdAlternating">ID</th>
-          <th v-on:click="sortProductsNameAlternating">Name</th>
+          <th>Order ID</th>
+          <th v-on:click="sortProductsNameAlternating">Product Name</th>
+          <th v-on:click="sortProductsUserNameAlternating">User Name</th>
           <th v-on:click="sortProductsPriceAlternating" style="text-align:right">Value</th>
           <th>Quantity</th>
           <th style="text-align:right">Value(total)</th>
@@ -88,7 +96,9 @@ export default {
     return {
       orders : [], 
       nameFilter : "",
+      userNameFilter : "",
       idFilter : "",
+      orderIdFilter : "",
       statusFilter : "",
       empty: false,
       priceFilter: {
@@ -128,9 +138,11 @@ export default {
       const backendurl = 'http://localhost:3000/';
       let url = backendurl + `order?offset=${this.page*10}&limit=10`;
 
+      url += this.idFilter ? `&id=${this.idFilter}` : '';
+      url += this.orderIdFilter ? `&orderId=${this.orderIdFilter}` : '';
       url += this.name ? `&name=${this.name}` : '';
       url += this.nameFilter ? `&name=${this.nameFilter}` : '';
-      url += this.idFilter ? `&id=${this.idFilter}` : '';
+      url += this.userNameFilter ? `&userName=${this.userNameFilter}` : '';
       url += this.statusFilter ? `&status=${this.statusFilter}` : '';
 
       url += this.sort ? `&sort=${this.sort}` : '';
@@ -171,6 +183,7 @@ export default {
     updateOrder: function(event) {
       this.newForm = false;
       var url = `http://localhost:3000/order`
+      console.log(event);
       axios({ method:"PUT", "url": url, data: event}).then(() => {
           this.getOrders();
         }
@@ -182,6 +195,14 @@ export default {
     sortProductsNameAlternating: function () {
       this.page = 0;
       this.sort = 'name'
+      this.asc = !this.asc
+      this.getOrders();
+      return
+    },
+
+    sortProductsUserNameAlternating: function () {
+      this.page = 0;
+      this.sort = 'userName'
       this.asc = !this.asc
       this.getOrders();
       return

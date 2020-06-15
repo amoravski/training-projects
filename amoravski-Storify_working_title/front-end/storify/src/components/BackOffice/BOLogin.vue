@@ -41,7 +41,7 @@ export default {
           result => {
             let parsed = JSON.parse(JSON.stringify(result.data));
             this.token = parsed.token; 
-            localStorage.setItem('JWT_account_storify', this.token);
+            localStorage.setItem('JWT_admin_account_storify', this.token);
             this.$router.push({ name: 'BOProducts'});
           },
           error => {

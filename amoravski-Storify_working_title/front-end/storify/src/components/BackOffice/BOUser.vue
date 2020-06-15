@@ -2,6 +2,8 @@
     <tr>
       <td>{{ user.id }}</td>
       <td>{{ user.user_name }}</td>
+      <td>{{ user.email }}</td>
+      <td>{{ user.status_name }}</td>
       <td>{{ formatDate() }}</td>
 
       <!-- Buttons -->
@@ -10,8 +12,16 @@
           Remove
         </button>
       </td>
+
       <td>
         <button style="background-color: green" v-on:click="toggleUpdateForm" >
+          Change password
+        </button>
+      </td>
+
+      <td>
+        <button style="background-color: green" >
+          Edit
         </button>
       </td>
 

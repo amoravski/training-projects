@@ -4,8 +4,8 @@
       <label for="name">Name:</label>
       <input name="name" type="text" v-model="order_up.name" id="name">
 
-      <label for="price">Price (lv.):</label>
-      <input name="price" step="0.01" type="number" v-model="order_up.price" min="1" id="price">
+      <label for="value">Price (lv.):</label>
+      <input name="value" step="0.01" type="number" v-model="order_up.value" min="1" id="value">
 
       <label for="quantity">Quantity:</label>
       <input name="quantity" type="number" v-model="order_up.quantity" min="1" id="quantity">
@@ -18,39 +18,32 @@
 <script>
 
 export default {
-  name: 'BOUpdateProductForm',
+  name: 'BOUpdateOrderForm',
   props: [ 'order' ],
 
   data () { 
     return {
       order_up: {
+        startedAt: this.order.started_at,
         id: this.order.id,
         name: this.order.name,
-        price: this.order.price,
+        value: this.order.value,
+        status: this.order.status_name,
         quantity:this.order.quantity,
       },
-      errors: []}
+      errors: []
+    }
   },
+
   methods: {
-
     submit () {
-      let formData = new FormData();
-      formData.append("id", this.order_up.id);
-      formData.append("name", this.order_up.name);
-      formData.append("price", this.order_up.price);
-      formData.append("quantity", this.order_up.quantity);
-      this.$emit('update', formData);
-    },
-
-    fileChange () {
-      const file = this.$refs.file.files[0];
-      this.order_up.file = file;
+      this.$emit('update', this.order_up);
     },
 
     checkForm: function (e) {
       e.preventDefault();
       this.errors = [];
-      if (this.order.price < 0) {
+      if (this.order.value < 0) {
         this.errors.push('Price must be under 0');
       }
 
