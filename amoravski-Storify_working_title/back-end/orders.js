@@ -13,8 +13,11 @@ async function getOrders(ctx) {
     const filter = ctx.request.query ? ctx.request.query : {};
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
-        const orderListResult = await pg.getOrders(filter.id,
+        const orderListResult = await pg.getOrders(
+            filter.id,
+            filter.orderId,
             filter.name,
+            filter.userName,
             filter.tag,
             filter.lowerPrice,
             filter.upperPrice,
@@ -45,6 +48,7 @@ async function updateOrder(ctx) {
         var params = ctx.request.body;
         var id = params.id
         var productId = params.productId;
+        var value = params.value;
         var userId = params.userId;
         var quantity = params.quantity;
         var status = params.status;
@@ -59,9 +63,9 @@ async function updateOrder(ctx) {
     }
 
     try {
-        const updateOrderResult = await pg.updateOrder(id, productId, userId, quantity, status, startedAt);
+        const updateOrderResult = await pg.updateOrder(id, value, quantity, status, startedAt);
         ctx.response.status = 200;
-        ctx.body = updateAccountResult;
+        ctx.body = updateOrderResult;
         return;
     } catch(err) {
         ctx.response.status = 500;

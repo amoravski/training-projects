@@ -338,12 +338,12 @@ async function remove_product(id) {
 }
 
 
-async function getOrders(id,name,tag,lowerPrice,upperPrice,lowerQuantity,upperQuantity, lowerDate, upperDate, sort,ord,limit,offset, userId, status) {
+async function getOrders(id,orderId,name,userName,tag,lowerPrice,upperPrice,lowerQuantity,upperQuantity, lowerDate, upperDate, sort,ord,limit,offset, userId, status) {
     //Open connection
     const pool = new Pool(config);
 
     // Build up the formatted query
-    let query_string = "SELECT orders.id, products.name, orders.value, orders.quantity, orders.started_at, order_statuses.status_name FROM orders INNER JOIN products ON orders.product_id = products.id INNER JOIN order_statuses ON orders.status = order_statuses.id WHERE order_statuses.status_name <> 'deleted'";
+    let query_string = "SELECT orders.id, orders.paypal_id, products.name, users.user_name, orders.value, orders.quantity, orders.started_at, order_statuses.status_name FROM orders INNER JOIN products ON orders.product_id = products.id INNER JOIN order_statuses ON orders.status = order_statuses.id INNER JOIN users ON users.id = orders.user_id WHERE order_statuses.status_name <> 'deleted'";
 
     //Flag to control if AND was appended already
     let appended = false;
@@ -362,8 +362,17 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,lowerQuantity,upperQu
         args.push(id);
     }
 
+    // ID filtering
+    if(orderId){
+        query_string += ` AND orders.paypal_id = $${arg}`;
+        arg++;
+        args.push(orderId);
+    }
+
     if(status) {
         query_string += ` AND order_statuses.status_name = $${arg}`;
+        console.log(query_string);
+        console.log(status);
         arg++;
         args.push(status);
     }
@@ -384,6 +393,24 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,lowerQuantity,upperQu
         }
         arg++;
         args.push(name);
+    }
+
+    // User name filtering
+    if(userName){
+        if(!appended) {
+            query_string += ` AND`;
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` users.user_name ILIKE '%' || $${arg} || '%'`;
+            appended = true;
+            or_brace_flag = true;
+        }
+        else {
+            query_string += or_brace_flag ? '' : ' (';
+            query_string += ` OR users.user_name ILIKE '%' || $${arg} || '%'`;
+            or_brace_flag = true;
+        }
+        arg++;
+        args.push(userName);
     }
 
     // user id filtering
@@ -500,6 +527,9 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,lowerQuantity,upperQu
         case 'name':
             query_string+=('products.name');
             break;
+        case 'userName':
+            query_string+=('users.user_name');
+            break;
         case 'value':
             query_string+=('orders.value');
             break;
@@ -543,6 +573,8 @@ async function getOrders(id,name,tag,lowerPrice,upperPrice,lowerQuantity,upperQu
     let response = await pool.query(query_string, args);
     let response_count = await pool.query(count_string, args_count);
     let output = response.rows;
+    console.log(response);
+    console.log(response.rows);
     let count = response_count.rows.length;
 
     //Close connection
@@ -555,9 +587,9 @@ async function create_order(product_id, quantity, value, paypal_id, userId) {
     const pool = new Pool(config);
 
     //Get current moment in epoch
-    let created_at = Math.floor(new Date() / 1000);
+    let created_at = new Date();
 
-    const result = await pool.query(`INSERT INTO orders (user_id, product_id, status, quantity, value, started_at, paypal_id) VALUES ($1,$2,$3,$4,$5, to_timestamp($6),$7) RETURNING id;`, [ userId ,product_id, 1 ,quantity,value,created_at,paypal_id]);
+    const result = await pool.query(`INSERT INTO orders (user_id, product_id, status, quantity, value, started_at, paypal_id) VALUES ($1,$2,$3,$4,$5, $6,$7) RETURNING id;`, [ userId ,product_id, 1 ,quantity,value,created_at,paypal_id]);
     const result_update = await pool.query('UPDATE products SET quantity = quantity - $1 WHERE id=$2', [quantity,product_id]);
 
     // Close connection
@@ -565,10 +597,13 @@ async function create_order(product_id, quantity, value, paypal_id, userId) {
     return {status: 'ok', id: result.rows[0].id};
 }
 
-async function updateOrder(id, productId, userId, quantity, status, startedAt) {
+async function updateOrder(id, value, quantity, statusName, startedAt) {
     const pool = new Pool(config);
 
-    const result = await pool.query('UPDATE orders SET product_id=$1, user_id=$2, quantity=$3, status=$4, startedAt=$5 WHERE id=$6',[id, productId, userId, quantity, status, startedAt]);
+    const statusResult = await pool.query('SELECT id FROM order_statuses WHERE status_name=$1',[statusName]);
+    const status = statusResult.rows[0].id;
+    const result = await pool.query('UPDATE orders SET value=$1, quantity=$2, status=$3, started_at=$4 WHERE id=$5', [value, quantity, status, startedAt, id]);
+    console.log(result);
 
     pool.end()
 
@@ -635,51 +670,65 @@ async function remove_from_cart(id) {
     return {status: 'ok'};
 }
 
-async function getAccounts(id, userName, email) {
+async function getAccounts(id, userName, email, status, lowerDate, upperDate) {
     const pool = new Pool(config);
 
     let arg = 1;
     let args = [];
     let queryCondition = '';
+
     if(id) {
-        if(queryCondition == '') {
-            queryCondition += ` AND id=$${arg}`;
-            arg++;
-            args.push(id);
-        }
-        else {
-            queryCondition += ` OR id=$${arg}`;
-            arg++;
-            args.push(id);
-        }
+        queryCondition += ` AND users.id=$${arg}`;
+        arg++;
+        args.push(id);
     }
+
+    if(status) {
+        queryCondition += ` AND user_statuses.status_name = $${arg}`;
+        arg++;
+        args.push(status);
+    }
+
     if(userName) {
         if(queryCondition == '') {
-            queryCondition += ` AND user_name=$${arg}`;
+            queryCondition += ` AND users.user_name ILIKE '%' || $${arg} || '%'`;
             arg++;
             args.push(userName);
         }
         else {
-            queryCondition += ` OR user_name=$${arg}`;
+            queryCondition += ` OR users.user_name ILIKE '%' || $${arg} || '%'`;
             arg++;
             args.push(userName);
         }
     }
     if(email) {
         if(queryCondition == '') {
-            queryCondition += ` AND email=$${arg}`;
+            queryCondition += ` AND email  ILIKE '%' || $${arg} || '%'`;
             arg++;
             args.push(email);
         }
         else {
-            queryCondition += ` OR email=$${arg}`;
+            queryCondition += ` OR email  ILIKE '%' || $${arg} || '%'`;
             arg++;
             args.push(email);
         }
     }
-    let query = 'SELECT * FROM users WHERE status <> 0;';
+
+    // Date Upper and Lower Bound filtering
+    if(lowerDate) {
+        queryCondition += ` AND users.created_at >= $${arg}`;
+        arg++;
+        args.push(lowerDate);
+    }
+    if(upperDate) {
+        queryCondition += ` AND users.created_at <= $${arg}`;
+        arg++;
+        args.push(upperDate);
+    }
+
+    let query = 'SELECT users.id,users.user_name,users.email,user_statuses.status_name, users.created_at FROM users INNER JOIN user_statuses ON users.status = user_statuses.id WHERE status <> 0;';
     if(queryCondition != '') {
-        query = 'SELECT * FROM users WHERE status <> 0' + queryCondition + ';';
+        query = 'SELECT users.id,users.user_name,users.email,user_statuses.status_name, users.created_at FROM users INNER JOIN user_statuses ON users.status = user_statuses.id WHERE status <> 0' + queryCondition + ';';
     }
     const result = await pool.query(query, args);
 
@@ -827,7 +876,7 @@ async function deleteAdmin(id) {
 
 async function login(email, password) {
     const pool = new Pool(config);
-    const userQueryResult = await pool.query('SELECT * FROM users WHERE email=$1;',[email]);
+    const userQueryResult = await pool.query('SELECT * FROM users WHERE status <> 3 AND email=$1;',[email]);
     try {
         const user = userQueryResult.rows[0];
         if(bcrypt.compareSync(password, user.password)) {

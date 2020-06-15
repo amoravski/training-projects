@@ -15,14 +15,23 @@ accountRouter.delete('/', deleteAccount);
 
 async function getAccounts(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
-    const filter = ctx.request.query ? ctx.request.query : {};
-    id = filter.id;
-    userName = filter.userName;
-    email = filter.email;
+    try {
+        const filter = ctx.request.query ? ctx.request.query : {};
+        id = filter.id;
+        userName = filter.userName;
+        email = filter.email;
+        status = filter.status;
+        lowerDate = filter.lowerDate;
+        upperDate = filter.upperDate;
+    } catch(err) {
+        ctx.response.status = 400;
+        ctx.response.body = {status: 'userError', error: err.message};
+        return;
+    }
 
     try {
         ctx.response.status = 200;
-        const resGetAccounts = await pg.getAccounts(id, userName, email);
+        const resGetAccounts = await pg.getAccounts(id, userName, email, status, lowerDate, upperDate);
         ctx.response.body = resGetAccounts;
         return;
     } catch(err) {
