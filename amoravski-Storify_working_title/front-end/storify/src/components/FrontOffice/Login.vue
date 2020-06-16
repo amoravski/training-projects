@@ -9,6 +9,7 @@
       <input v-model="form.password" name="password" type="password">
 
       <input v-on:click="submit" type="submit" value="Submit">
+      <input v-on:click="forgotPassword" type="submit" value="Forgot Password?">
   </div>
 </template>
 
@@ -50,6 +51,10 @@ export default {
             alert(resp);
           }
         );
+    },
+
+    forgotPassword () {
+            this.$router.push({ name: 'Forgot'});
     },
 
     fileChange () {
