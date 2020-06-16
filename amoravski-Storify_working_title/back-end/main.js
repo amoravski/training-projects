@@ -13,6 +13,8 @@ const paypal = require('./paypal.js');
 const order = require('./orders.js');
 const cart = require('./carts.js');
 const authentication = require('./authentication.js');
+const verification = require('./verification.js');
+const forgot = require('./forgot.js');
 
 const app = new Koa();
 
@@ -32,6 +34,8 @@ app.use(cart.routes());
 app.use(account.routes());
 app.use(admin.routes());
 app.use(authentication.routes());
+app.use(verification.routes());
+app.use(forgot.routes());
 
 // OPTIONS requests
 app.use(product.allowedMethods());
@@ -40,7 +44,9 @@ app.use(order.allowedMethods());
 app.use(cart.allowedMethods());
 app.use(account.allowedMethods());
 app.use(admin.allowedMethods());
-app.use(authentication.routes());
+app.use(authentication.allowedMethods());
+app.use(verification.allowedMethods());
+app.use(forgot.allowedMethods());
 
 // Static files 
 app.use(serve('./upload'));

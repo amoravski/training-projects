@@ -7,6 +7,7 @@ const { Client, Pool } = require('pg');
 const fs = require('fs');
 const ini = require('ini');
 const bcrypt = require('bcrypt');
+const mail = require('./mail.js');
 
 const config_ini = ini.parse(fs.readFileSync('./config.ini', 'utf8'));
 const config = {
@@ -371,8 +372,6 @@ async function getOrders(id,orderId,name,userName,tag,lowerPrice,upperPrice,lowe
 
     if(status) {
         query_string += ` AND order_statuses.status_name = $${arg}`;
-        console.log(query_string);
-        console.log(status);
         arg++;
         args.push(status);
     }
@@ -573,8 +572,6 @@ async function getOrders(id,orderId,name,userName,tag,lowerPrice,upperPrice,lowe
     let response = await pool.query(query_string, args);
     let response_count = await pool.query(count_string, args_count);
     let output = response.rows;
-    console.log(response);
-    console.log(response.rows);
     let count = response_count.rows.length;
 
     //Close connection
@@ -603,7 +600,6 @@ async function updateOrder(id, value, quantity, statusName, startedAt) {
     const statusResult = await pool.query('SELECT id FROM order_statuses WHERE status_name=$1',[statusName]);
     const status = statusResult.rows[0].id;
     const result = await pool.query('UPDATE orders SET value=$1, quantity=$2, status=$3, started_at=$4 WHERE id=$5', [value, quantity, status, startedAt, id]);
-    console.log(result);
 
     pool.end()
 
@@ -731,6 +727,7 @@ async function getAccounts(id, userName, email, status, lowerDate, upperDate) {
         query = 'SELECT users.id,users.user_name,users.email,user_statuses.status_name, users.created_at FROM users INNER JOIN user_statuses ON users.status = user_statuses.id WHERE status <> 0' + queryCondition + ';';
     }
     const result = await pool.query(query, args);
+    pool.end();
 
     return {status: 'ok', accounts: result.rows, count: result.rowCount};
 }
@@ -743,8 +740,13 @@ async function newAccount(userName, email, password) {
 
     let hash = bcrypt.hashSync(password, 10);
 
-    const result = await pool.query('INSERT INTO users (user_name, email, password, created_at, status) VALUES ($1,$2,$3,to_timestamp($4), $5)', [userName, email, hash, createdAt, 1]);
+    const result = await pool.query('INSERT INTO users (user_name, email, password, created_at, status) VALUES ($1,$2,$3,to_timestamp($4), $5) RETURNING id', [userName, email, hash, createdAt, 1]);
 
+    const userId = result.rows[0].id;
+    const randomId = Math.floor((Math.random() * 100) + 54);
+    const verificationInsert = await pool.query('INSERT INTO verification (user_id, verification_id) VALUES ($1,$2);', [userId, randomId]);
+    mail.sendVerificationEmail(randomId, email);
+    
     pool.end()
 
     return {status: 'ok'};
@@ -835,6 +837,7 @@ async function getAdmin(id, userName, email) {
         query = 'SELECT * FROM insiders WHERE status <> 0' + queryCondition + ';';
     }
     const result = await pool.query(query, args);
+    pool.end();
 
     return {status: 'ok', accounts: result.rows, count: result.rowCount};
 }
@@ -859,7 +862,7 @@ async function updateAdmin(id, userName, email, password) {
 
     const result = await pool.query('UPDATE insiders SET user_name=$1, email=$2, password=$3 WHERE id=$4',[userName,email,password,id]);
 
-    pool.end()
+    pool.end();
 
     return {status: 'ok'};
 }
@@ -869,7 +872,7 @@ async function deleteAdmin(id) {
 
     const result = await pool.query('UPDATE insiders SET status=0 WHERE id=$1',[id]);
 
-    pool.end()
+    pool.end();
 
     return {status: 'ok'};
 }
@@ -877,6 +880,7 @@ async function deleteAdmin(id) {
 async function login(email, password) {
     const pool = new Pool(config);
     const userQueryResult = await pool.query('SELECT * FROM users WHERE status <> 3 AND email=$1;',[email]);
+    pool.end();
     try {
         const user = userQueryResult.rows[0];
         if(bcrypt.compareSync(password, user.password)) {
@@ -891,6 +895,7 @@ async function login(email, password) {
 async function loginAdmin(email, password) {
     const pool = new Pool(config);
     const userQueryResult = await pool.query('SELECT * FROM insiders WHERE email=$1;',[email]);
+    pool.end();
     try {
         const user = userQueryResult.rows[0];
         if(bcrypt.compareSync(password, user.password)) {
@@ -900,6 +905,71 @@ async function loginAdmin(email, password) {
     } catch (err) {
         return {status: 'userError', message: "Account doesn't exist"};
     }
+}
+
+async function verifyAccount(id) {
+    const pool = new Pool(config);
+
+    const verificationQueryResult = await pool.query('SELECT user_id FROM verification WHERE verification_id=$1;',[id]);
+
+    try {
+        var userId = verificationQueryResult.rows[0].user_id;
+    } catch (err) {
+        return {status: 'userError', message: "Verification ID invalid"};
+    }
+
+    const verifyUserResult = await pool.query('UPDATE users SET status=2 WHERE id=$1', [userId]);
+
+    pool.end();
+    return {status: 'ok'};
+
+}
+
+async function sendVerificationEmail(email) {
+    const pool = new Pool(config);
+
+    const result = await pool.query('SELECT id FROM users WHERE email=$1',[email]);
+
+    const userId = result.rows[0].id;
+    const randomId = Math.floor((Math.random() * 100) + 54);
+    const verificationInsert = await pool.query('INSERT INTO verification (user_id, verification_id) VALUES ($1,$2);', [userId, randomId]);
+    mail.sendVerificationEmail(randomId, email);
+    
+    pool.end();
+    return {status: 'ok'};
+}
+
+async function resetPassword(id, password) {
+    const pool = new Pool(config);
+
+    const verificationQueryResult = await pool.query('SELECT user_id FROM verification WHERE verification_id=$1;',[id]);
+
+    try {
+        var userId = verificationQueryResult.rows[0].user_id;
+    } catch (err) {
+        return {status: 'userError', message: "Verification ID invalid"};
+    }
+
+    let hash = bcrypt.hashSync(password, 10);
+    const verifyUserResult = await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hash, userId]);
+
+    pool.end();
+    return {status: 'ok'};
+
+}
+
+async function sendResetEmail(email) {
+    const pool = new Pool(config);
+
+    const result = await pool.query('SELECT id FROM users WHERE email=$1',[email]);
+
+    const userId = result.rows[0].id;
+    const randomId = Math.floor((Math.random() * 100) + 54);
+    const verificationInsert = await pool.query('INSERT INTO verification (user_id, verification_id) VALUES ($1,$2);', [userId, randomId]);
+    mail.sendResetEmail(randomId, email);
+    
+    pool.end();
+    return {status: 'ok'};
 }
 
 module.exports.get_products = get_products;
@@ -931,3 +1001,9 @@ module.exports.deleteAdmin = deleteAdmin;
 
 module.exports.login = login;
 module.exports.loginAdmin = loginAdmin;
+
+module.exports.verifyAccount = verifyAccount;
+module.exports.sendVerificationEmail = sendVerificationEmail;
+
+module.exports.resetPassword = resetPassword;
+module.exports.sendResetEmail = sendResetEmail;

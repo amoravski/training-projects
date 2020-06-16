@@ -2,24 +2,37 @@
 const nodemailer = require('nodemailer');
 const router = require('koa-router');
 
-const mailRouter = router({
-    prefix: '/mail'
-});
+var transporter = nodemailer.createTransport('smtps://storifytest1%40gmail.com:storify12@smtp.gmail.com');
 
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        type: 'OAuth2',
-        clientId: '767615363283-d9mkkt02c737gclfb2t1vuk0927eph5l.apps.googleusercontent.com',
-        clientSecret: 'htmqFhXyVl-weZPnH4LdBbUy'
-    }
-});
-
-mailRouter.get('/', test);
-
-async function test(ctx) {
-    transporter.sendMail({
-        from: 
+async function sendVerificationEmail(randomId, email) {
+    var mailOptions = {
+        from: '"Storify" <storifytest1@gmail.com>',
+        to: email,
+        subject: 'Storify Account Activation',
+        text: 'Please click this link to activate your account: ' + 'http://localhost:8080/verify?verificationId=' + randomId,
+        html: 'Please click this link to activate your account: ' + 'http://localhost:8080/verify?verificationId=' + randomId
+    };
+    sendMail(mailOptions);
 }
+
+async function sendResetEmail(randomId, email) {
+    var mailOptions = {
+        from: '"Storify" <storifytest1@gmail.com>',
+        to: email,
+        subject: 'Storify Password Reset',
+        text: 'Please click this link to reset your password: ' + 'http://localhost:8080/forgot?resetId=' + randomId,
+        html: 'Please click this link to reset your password: ' + 'http://localhost:8080/forgot?resetId=' + randomId
+    };
+    sendMail(mailOptions);
+}
+async function sendMail(mailOptions) {
+    transporter.sendMail(mailOptions, function(error, info){
+        if(error){
+            return console.log(error);
+        }
+        console.log('Message sent: ' + info.response);
+    });
+}
+
+module.exports.sendVerificationEmail = sendVerificationEmail;
+module.exports.sendResetEmail = sendResetEmail;

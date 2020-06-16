@@ -11,9 +11,9 @@ authenticationRouter.post('/admin', loginAdmin);
 
 async function login(ctx) {
     try {
-        params = ctx.request.body;
-        email = params.email;
-        password = params.password;
+        var params = ctx.request.body;
+        var email = params.email;
+        var password = params.password;
         if(!(email && password)) {
             throw 'Missing parameter';
         }
