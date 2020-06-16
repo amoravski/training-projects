@@ -7,6 +7,8 @@ import Products from './components/FrontOffice/Products.vue';
 import Orders from './components/FrontOffice/Orders.vue';
 import Login from './components/FrontOffice/Login.vue';
 import Register from './components/FrontOffice/Register.vue';
+import VerifyEmail from './components/FrontOffice/VerifyEmail.vue';
+import ForgotPassword from './components/FrontOffice/ForgotPassword.vue';
 import BOHeader from './components/BackOffice/BOHeader';
 import BOProducts from './components/BackOffice/BOProducts.vue';
 import BOOrders from './components/BackOffice/BOOrders.vue';
@@ -25,6 +27,8 @@ const routes = [
     { path: '/orders', name: 'Orders', component: Orders },
     { path: '/login', name: 'Login', component: Login },
     { path: '/register', name: 'Register', component: Register },
+    { path: '/verify', name: 'Verify', component: VerifyEmail },
+    { path: '/forgot', name: 'Forgot', component: ForgotPassword },
     { path: '/bo', name: 'BOHeader', component: BOHeader },
     { path: '/boproducts', name: 'BOProducts', component: BOProducts },
     { path: '/boorders', name: 'BOOrders', component: BOOrders },
