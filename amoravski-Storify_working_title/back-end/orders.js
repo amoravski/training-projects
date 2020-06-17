@@ -63,7 +63,7 @@ async function updateOrder(ctx) {
     }
 
     try {
-        const updateOrderResult = await pg.updateOrder(id, value, quantity, status, startedAt);
+        const updateOrderResult = await pg.updateOrder(id, value, quantity, startedAt);
         ctx.response.status = 200;
         ctx.body = updateOrderResult;
         return;

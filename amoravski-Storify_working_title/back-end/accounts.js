@@ -47,6 +47,8 @@ async function newAccount(ctx) {
         const userName = params.userName;
         const email = params.email;
         const password = params.password;
+        const address = params.address;
+        const phone = params.phone;
         if(!(userName && email && password)) {
             throw 'Missing params';
         }
@@ -67,7 +69,7 @@ async function newAccount(ctx) {
     }
 
     try {
-        const newAccountResult = await pg.newAccount(params.userName, params.email, params.password);
+        const newAccountResult = await pg.newAccount(params.userName, params.email, params.password, params.address, params.phone);
         ctx.response.status = 200;
         ctx.body = newAccountResult;
         return;
@@ -83,10 +85,11 @@ async function updateAccount(ctx) {
     try {
         params = ctx.request.body;
         id = params.id
-        userName = params.userName;
+        user_name = params.user_name;
         email = params.email;
         password = params.password;
-        if(!(userName && email && password)) {
+        created_at = params.created_at;
+        if(!(user_name && email)) {
             throw 'Missing params';
         }
     } catch (err) {
@@ -96,7 +99,7 @@ async function updateAccount(ctx) {
     }
 
     try {
-        const updateAccountResult = await pg.updateAccount(id, userName, email, password);
+        const updateAccountResult = await pg.updateAccount(id, user_name, email, password, created_at);
         ctx.response.status = 200;
         ctx.body = updateAccountResult;
         return;

@@ -27,8 +27,13 @@ async function resetPassword(ctx) {
     }
 
     try {
-        ctx.response.status = 200;
         const resResetPassword = await pg.resetPassword(id,password);
+        if(resResetPassword.status != "ok") {
+            ctx.response.status = 400;
+            ctx.response.body = resResetPassword;
+            return;
+        }
+        ctx.response.status = 200;
         ctx.response.body = resResetPassword;
         return;
     } catch(err) {

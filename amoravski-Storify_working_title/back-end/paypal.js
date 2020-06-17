@@ -78,12 +78,12 @@ function buildRequestBody(cart) {
                         "name": `${cart[i].name}`,
                         "unit_amount": {
                             "currency_code": "EUR",
-                            "value": `${cart[i].price / 100}`
+                            "value": `${Math.floor(cart[i].price / 100)}`
                         },
                         "quantity": `${cart[i].quantity}`,
                         "category": "PHYSICAL_GOODS"
                     });
-        total_value += cart[i].quantity * (cart[i].price / 100 );
+        total_value += cart[i].quantity * (Math.floor(cart[i].price / 100) );
     }
     return {
         "intent": "CAPTURE",
