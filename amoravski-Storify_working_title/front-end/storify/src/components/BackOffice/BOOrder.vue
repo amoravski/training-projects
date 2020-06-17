@@ -1,25 +1,36 @@
 <template>
     <tr>
-      <td>{{ formatDate() }}</td>
-      <td>{{ order.id }}</td>
-      <td>{{ order.paypal_id }}</td>
-      <td>{{ order.name }}</td>
-      <td>{{ order.user_name }}</td>
-      <td style="text-align:right">{{ formatMoney(order.value, 1) }} </td>
-      <td>{{ order.quantity }}</td>
-      <td style="text-align:right">{{ formatMoney(order.value, order.quantity) }} </td>
-      <td>{{ order.status_name }}</td>
+      <td v-if="!updateFormActive">{{ new Date(order.started_at).toLocaleString() }}</td>
+      <td v-if="!updateFormActive">{{ order.id }}</td>
+      <td v-if="!updateFormActive">{{ order.paypal_id }}</td>
+      <td v-if="!updateFormActive">{{ order.name }}</td>
+      <td v-if="!updateFormActive">{{ order.user_name }}</td>
+      <td  v-if="!updateFormActive" style="text-align:right">{{ formatMoney(order.value, 1) }} </td>
+      <td v-if="!updateFormActive">{{ order.quantity }}</td>
+      <td  v-if="!updateFormActive" style="text-align:right">{{ formatMoney(order.value, order.quantity) }} </td>
+      <td v-if="!updateFormActive">{{ order.status_name }}</td>
 
       <!-- Buttons -->
-      <td v-if="!updateFormActive" >
+      <td v-if="!updateFormActive && order.status_name == 'not_paid'" >
         <button style="background-color: red" v-on:click="removed" >
           Remove
         </button>
       </td>
-      <td>
+      <td v-if="order.status_name == 'not_paid'">
         <button style="background-color: green" v-on:click="toggleUpdateForm" >
           {{updateFormActive ? "Close Form" : "Edit"}}
         </button>
+      </td>
+      <td v-if="order.status_name == 'paid'">
+        <button style="background-color: green" v-on:click="dispatch" >
+          Dispatch
+        </button>
+      </td>
+      <td v-if="order.status_name == 'paid'">
+      </td>
+      <td v-if="order.status_name == 'dispatched'">
+      </td>
+      <td v-if="order.status_name == 'dispatched'">
       </td>
       <BOUpdateOrderForm @update="updated" v-if="updateFormActive" :order="order" />
     </tr>
@@ -55,6 +66,10 @@ export default {
     // Raise 'removed' event for BOProducts, pass id
     removed () {
       this.$emit('removed', this.order.id);
+    },
+
+    dispatch () {
+      this.$emit('dispatched', this.order.id);
     },
 
     // Transmit 'updated' event from BOUpdateOrderForm to BOProducts

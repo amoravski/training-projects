@@ -69,7 +69,7 @@
         </tr>
       </thead>
       <tbody>
-        <BOOrder @updated="updateOrder" @removed="removeOrder"  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
+        <BOOrder @dispatched="dispatchOrder" @updated="updateOrder" @removed="removeOrder"  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
       </tbody>
     </table>
 
@@ -173,6 +173,7 @@ export default {
     removeOrder: function (event) {
       var url = `http://localhost:3000/order?id=${event}`
       axios({ method:"DELETE", "url": url}).then(() => { 
+          alert("Removed Order");
           this.getOrders();
         }
       , error => {
@@ -181,10 +182,21 @@ export default {
     },
 
     updateOrder: function(event) {
-      this.newForm = false;
       var url = `http://localhost:3000/order`
       console.log(event);
       axios({ method:"PUT", "url": url, data: event}).then(() => {
+          alert("Updated Order");
+          this.getOrders();
+        }
+      , error => {
+        console.log(error);
+      });
+    },
+
+    dispatchOrder: function (event) {
+      var url = `http://localhost:3000/dispatch`
+      axios({ method:"POST", "url": url, data: {id: event}}).then(() => { 
+          alert("Dispatched Order");
           this.getOrders();
         }
       , error => {

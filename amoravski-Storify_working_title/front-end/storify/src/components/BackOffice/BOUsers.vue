@@ -49,7 +49,7 @@
           </tr>
         </thead>
         <tbody>
-          <BOUser @removed="removeUser"  v-for="user in users" v-bind:key="user.id" v-bind:user=user />
+          <BOUser @updated="updateUser" @removed="removeUser"  v-for="user in users" v-bind:key="user.id" v-bind:user=user />
         </tbody>
     </table>
 
@@ -136,6 +136,18 @@ export default {
             console.log(error);
           }
         );
+    },
+
+    updateUser: function(event) {
+      var url = `http://localhost:3000/account`
+      console.log(event);
+      axios({ method:"PUT", "url": url, data: event}).then(() => {
+          alert("Updated user");
+          this.getUsers();
+        }
+      , error => {
+        console.log(error);
+      });
     },
 
     removeUser: function (event) {
