@@ -2,18 +2,28 @@
   <div id="products">
       <Header />
       <!--Filters and search-->
-      <h2>Products</h2>
-      Price filter: from
-      <input style="width: 10rem;" v-model="lowerPrice" type="number" id="lower-price"/>
-      to
-      <input style="width: 10rem;" v-model="upperPrice" type="number" id="upper-price"/>
-      €
-      <label for="searchTerm"><b>Search: </b></label>
-      <input style="width: 50rem;" v-model="searchTerm" type="text" id="searchTerm"/>
-      <button v-on:click="search">Search</button>
+      <div style="float: left;">
+        <h2>Products</h2>
+        Price filter: from
+        <input style="width: 8rem;" v-model="lowerPrice" type="number" id="lower-price"/>
+        to
+        <input style="width: 8rem;" v-model="upperPrice" type="number" id="upper-price"/>
+        €
+        <label for="searchTerm"><b>Search: </b></label>
+        <input style="width: 30rem;" v-model="searchTerm" type="text" id="searchTerm"/>
+
+        <div>
+          <label for="tagsFilter"><b>Category: </b></label>
+          <select style="width: 30rem;" id="statusFilter" v-model="tagsFilter">
+            <option v-for="tag in tags" v-bind:value="tag.tag_name" v-bind:key="tag.id">{{tag.tag_name}}</option>
+            <option value=""></option>
+          </select >
+        </div>
+        <button v-on:click="search">Search</button>
+      </div>
 
       <!--Cart and checkout-->
-      <div v-if="cart.length">
+      <div style="float: right;" v-if="cart.length">
         <h2>Cart</h2>
        <table style="width: 40rem;">
           <thead>
@@ -28,7 +38,7 @@
             </tr>
           </thead>
           <tbody>
-            <CartItem @removed="removeCart" v-for="cartItem in cart" v-bind:key="cartItem.id" v-bind:cartItem=cartItem />
+            <CartItem @quantityChanged="addToCart" @removed="removeCart" v-for="cartItem in cart" v-bind:key="cartItem.id" v-bind:cartItem=cartItem />
             <tr>
               <th>Total Price</th>
               <td style="text-align:right">{{ formatMoney(totalCartPrice()) }}</td>
@@ -82,8 +92,10 @@ export default {
   data () {
     return {
       products : [], 
+      tags : [], 
       cart: [],
       searchTerm : "",
+      tagsFilter : "",
       empty: false,
       lowerPrice: 0,
       upperPrice: 0,
@@ -114,6 +126,7 @@ export default {
     if(this.orderID) {
       this.authenticateOrder();
     }
+    this.getTags();
     this.getProducts(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
   },
 
@@ -123,12 +136,27 @@ export default {
       this.getProducts(this.searchTerm,this.searchTerm, this.lowerPrice, this.upperPrice);
     },
 
+    getTags: function () {
+      const backendurl = 'http://localhost:3000/';
+      const url = backendurl + 'category';
+      axios({ method:"GET", "url": url})
+        .then(
+          result => {
+            let parsed = JSON.parse(JSON.stringify(result.data));
+            this.tags = parsed.categories; 
+          },
+          error => {
+            console.log(error);
+          }
+        );
+    },
+
     getProducts: function (name, tag, lowerPrice, upperPrice) {
       // Build url
       const backendurl = 'http://localhost:3000/';
       let url = backendurl + `product?offset=${this.page*5}&limit=5`;
       url += name ? `&name=${name}` : '';
-      url += tag ? `&tag=${tag}` : '';
+      url += this.tagsFilter ? `&tag=${this.tagsFilter}` : '';
       url += this.nameSort ? `&sort=name` : '';
       url += this.priceSort ? `&sort=price` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';
@@ -200,7 +228,6 @@ export default {
       event.user_id = this.user_id;
       event.jwt = this.jwt;
       axios({ method:"PUT", "url": url, data: event}).then(() => {
-        alert("Added to Cart");
         this.getCart();
       }, error => {
         console.log(error.response.data);

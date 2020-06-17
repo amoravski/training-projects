@@ -8,6 +8,12 @@
       <label for="email">Email:</label>
       <input v-model="form.email" name="email" type="email">
 
+      <label for="address">Address:</label>
+      <input v-model="form.address" name="address" type="text">
+
+      <label for="phone">Phone:</label>
+      <input v-model="form.phone" name="email" type="phone">
+
       <label for="password">Password:</label>
       <input v-model="form.password" name="password" type="password">
 
@@ -29,6 +35,8 @@ export default {
       form: {
         username: '',
         email: '',
+        phone: '',
+        address: '',
         password: ''
       },
     }
@@ -39,7 +47,7 @@ export default {
     submit () {
       const backendurl = 'http://localhost:3000/';
       let url = backendurl + 'account';
-      axios({ method:"POST", "url": url, "data": {userName: this.form.username, email: this.form.email, password: this.form.password}})
+      axios({ method:"POST", "url": url, "data": {userName: this.form.username, email: this.form.email, password: this.form.password, phone: this.form.phone, address: this.form.address}})
         .then(
           () => {
             alert("Account made, please log in");

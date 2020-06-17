@@ -51,9 +51,12 @@ export default {
       axios({ method:"POST", "url": url, data: {id: this.resetId, password: this.password}})
         .then(
           result => {
+            alert("Password reset, log in");
+            this.$router.push({ name: 'Login'});
             console.log(result);
           },
           error => {
+            alert("Link expired");
             console.log(error);
           }
         );

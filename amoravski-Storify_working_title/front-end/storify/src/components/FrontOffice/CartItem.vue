@@ -4,9 +4,8 @@
       <td>{{ cartItem.name }}</td>
       <td style="text-align:right">{{ formatMoney(cartItem.price, 1) }}</td>
       <td>лв.</td>
-      <td>{{ cartItem.quantity }}</td>
+      <td><input @change="quantityChanged" name="quantity" type="number" v-model="cartItem.quantity" id="quantity"></td>
       <td style="text-align:right">{{ formatMoney(cartItem.price, cartItem.quantity) }}</td>
-      <td>лв.</td>
       <!-- Buttons -->
       <td>
         <button style="background-color: red" v-on:click="removeCart">
@@ -40,6 +39,10 @@ export default {
       const final_str = '€' + lv + ',' + st;
       return final_str;
     },
+
+    quantityChanged () {
+      this.$emit('quantityChanged', this.cartItem);
+    }
 
   }
 };
