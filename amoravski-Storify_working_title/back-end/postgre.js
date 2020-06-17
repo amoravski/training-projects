@@ -594,12 +594,10 @@ async function create_order(product_id, quantity, value, paypal_id, userId) {
     return {status: 'ok', id: result.rows[0].id};
 }
 
-async function updateOrder(id, value, quantity, statusName, startedAt) {
+async function updateOrder(id, value, quantity, startedAt) {
     const pool = new Pool(config);
 
-    const statusResult = await pool.query('SELECT id FROM order_statuses WHERE status_name=$1',[statusName]);
-    const status = statusResult.rows[0].id;
-    const result = await pool.query('UPDATE orders SET value=$1, quantity=$2, status=$3, started_at=$4 WHERE id=$5', [value, quantity, status, startedAt, id]);
+    const result = await pool.query('UPDATE orders SET value=$1, quantity=$2, started_at=$3 WHERE id=$4 AND status <> 2', [value, quantity, startedAt, id]);
 
     pool.end()
 
@@ -609,7 +607,7 @@ async function updateOrder(id, value, quantity, statusName, startedAt) {
 async function deleteOrder(id) {
     const pool = new Pool(config);
 
-    const result = await pool.query('UPDATE orders SET status=4 WHERE id=$1', [id]);
+    const result = await pool.query('UPDATE orders SET status=4 WHERE id=$1 AND status <> 2', [id]);
 
     pool.end()
 
@@ -641,7 +639,7 @@ async function authorize_order(order_id, user_id) {
 async function get_cart(user_id) {
     const pool = new Pool(config);
 
-    const result = await pool.query('SELECT carts.id, carts.user_id, carts.product_id, carts.quantity, carts.created_at, products.name, products.price FROM carts INNER JOIN products ON carts.product_id = products.id WHERE user_id=$1;', [user_id]);
+    const result = await pool.query('SELECT carts.id, carts.user_id, carts.product_id, carts.quantity, carts.created_at, products.name, products.price FROM carts INNER JOIN products ON carts.product_id = products.id WHERE user_id=$1 ORDER BY products.name;', [user_id]);
 
     pool.end()
     return {status: 'ok', cart: result.rows};
@@ -732,15 +730,15 @@ async function getAccounts(id, userName, email, status, lowerDate, upperDate) {
     return {status: 'ok', accounts: result.rows, count: result.rowCount};
 }
 
-async function newAccount(userName, email, password) {
+async function newAccount(userName, email, password, address, phone) {
     const pool = new Pool(config);
 
     //Get current moment in epoch
     let createdAt = Math.floor(new Date() / 1000);
 
     let hash = bcrypt.hashSync(password, 10);
-
-    const result = await pool.query('INSERT INTO users (user_name, email, password, created_at, status) VALUES ($1,$2,$3,to_timestamp($4), $5) RETURNING id', [userName, email, hash, createdAt, 1]);
+    console.log(address)
+    const result = await pool.query('INSERT INTO users (user_name, email, password, created_at, status, address, phone) VALUES ($1,$2,$3,to_timestamp($4), $5, $6, $7) RETURNING id', [userName, email, hash, createdAt, 1, address, phone]);
 
     const userId = result.rows[0].id;
     const randomId = Math.floor((Math.random() * 100) + 54);
@@ -770,10 +768,16 @@ async function checkAvailability(userName, email) {
     return {status: 'ok'};
 }
 
-async function updateAccount(id, userName, email, password) {
+async function updateAccount(id, userName, email, password, createdAt) {
     const pool = new Pool(config);
 
-    const result = await pool.query('UPDATE users SET user_name=$1, email=$2, password=$3 WHERE id=$4',[userName,email,password,id]);
+    if(password) {
+        let hash = bcrypt.hashSync(password, 10);
+        const result = await pool.query('UPDATE users SET user_name=$1, email=$2, password=$3, created_at=$4 WHERE id=$5',[userName,email,hash,createdAt, id]);
+        pool.end();
+        return {status: 'ok'};
+    }
+    const result = await pool.query('UPDATE users SET user_name=$1, email=$2, created_at=$3 WHERE id=$4',[userName,email,createdAt,id]);
 
     pool.end()
 
@@ -860,7 +864,13 @@ async function newAdmin(userName, email, password) {
 async function updateAdmin(id, userName, email, password) {
     const pool = new Pool(config);
 
-    const result = await pool.query('UPDATE insiders SET user_name=$1, email=$2, password=$3 WHERE id=$4',[userName,email,password,id]);
+    if(password) {
+        let hash = bcrypt.hashSync(password, 10);
+        const result = await pool.query('UPDATE insiders SET user_name=$1, email=$2, password=$3 WHERE id=$4',[userName,email,hash,id]);
+        pool.end();
+        return {status: 'ok'};
+    }
+    const result = await pool.query('UPDATE insiders SET user_name=$1, email=$2 WHERE id=$3',[userName,email,id]);
 
     pool.end();
 
@@ -918,6 +928,7 @@ async function verifyAccount(id) {
         return {status: 'userError', message: "Verification ID invalid"};
     }
 
+    const deleteOldVerification = await pool.query('DELETE FROM verification WHERE verification_id=$1;',[id]);
     const verifyUserResult = await pool.query('UPDATE users SET status=2 WHERE id=$1', [userId]);
 
     pool.end();
@@ -944,12 +955,15 @@ async function resetPassword(id, password) {
 
     const verificationQueryResult = await pool.query('SELECT user_id FROM verification WHERE verification_id=$1;',[id]);
 
+    console.log(id);
     try {
         var userId = verificationQueryResult.rows[0].user_id;
+        console.log(userId);
     } catch (err) {
         return {status: 'userError', message: "Verification ID invalid"};
     }
 
+    const deleteOldVerification = await pool.query('DELETE FROM verification WHERE verification_id=$1;',[id]);
     let hash = bcrypt.hashSync(password, 10);
     const verifyUserResult = await pool.query('UPDATE users SET password=$1 WHERE id=$2', [hash, userId]);
 
@@ -968,6 +982,20 @@ async function sendResetEmail(email) {
     const verificationInsert = await pool.query('INSERT INTO verification (user_id, verification_id) VALUES ($1,$2);', [userId, randomId]);
     mail.sendResetEmail(randomId, email);
     
+    pool.end();
+    return {status: 'ok'};
+}
+
+async function getCategories() {
+    const pool = new Pool(config);
+    const result = await pool.query('SELECT * FROM tag_names');
+    pool.end();
+    return {status: 'ok', categories: result.rows};
+}
+
+async function dispatchOrder(order_id) {
+    const pool = new Pool(config);
+    const result = await pool.query(`UPDATE orders SET status=$1 WHERE id=$2;`, [5, order_id]);
     pool.end();
     return {status: 'ok'};
 }
@@ -1007,3 +1035,7 @@ module.exports.sendVerificationEmail = sendVerificationEmail;
 
 module.exports.resetPassword = resetPassword;
 module.exports.sendResetEmail = sendResetEmail;
+
+module.exports.getCategories = getCategories;
+
+module.exports.dispatchOrder = dispatchOrder;
