@@ -17,18 +17,26 @@
       <label for="password">Password:</label>
       <input v-model="form.password" name="password" type="password">
 
-      <input v-on:click="submit" type="submit" value="Submit">
+      <input v-on:click="submitCaptcha" type="submit" value="Submit">
+      <vueRecaptcha
+        ref="recaptcha"
+        @verify="onCaptchaVerified"
+        @expired="onCaptchaExpired"
+        size="invisible"
+        sitekey="6LfC1KYZAAAAAEd9uwB-RfhhhUUFDRq1ENdlJ2Vw">
+      </vueRecaptcha>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import vueRecaptcha from 'vue-recaptcha';
 import Header from './Header.vue';
 
 export default {
   name: 'Register',
 
-  components: { Header },
+  components: { Header, vueRecaptcha },
 
   data () {
     return {
@@ -42,12 +50,18 @@ export default {
     }
   },
 
+  mounted () {
+      let recaptchaScript = document.createElement('script')
+      recaptchaScript.setAttribute('src', 'https://www.google.com/recaptcha/api.j?onload=vueRecaptchaApiLoaded&render=explicits')
+      document.head.appendChild(recaptchaScript)
+  },
+
   methods: {
 
-    submit () {
+    submit (recaptchaToken) {
       const backendurl = 'http://localhost:3000/';
       let url = backendurl + 'account';
-      axios({ method:"POST", "url": url, "data": {userName: this.form.username, email: this.form.email, password: this.form.password, phone: this.form.phone, address: this.form.address}})
+      axios({ method:"POST", "url": url, "data": {userName: this.form.username, email: this.form.email, password: this.form.password, phone: this.form.phone, address: this.form.address, recaptchaToken: recaptchaToken}})
         .then(
           () => {
             alert("Account made, please log in");
@@ -79,6 +93,18 @@ export default {
 
     },
 
+    onCaptchaVerified: function (recaptchaToken) {
+      this.$refs.recaptcha.reset();
+      this.submit(recaptchaToken);
+    },
+
+    onCaptchaExpired: function () {
+      this.$refs.recaptcha.reset();
+    },
+
+    submitCaptcha: function () {
+      this.$refs.recaptcha.execute();
+    }
   }
 };
 </script>
