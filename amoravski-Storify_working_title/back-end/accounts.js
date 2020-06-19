@@ -3,6 +3,7 @@
  */
 
 const router = require('koa-router');
+const request = require('request');
 const pg = require('./postgre.js');
 const accountRouter = router({
     prefix: '/account'
@@ -49,6 +50,7 @@ async function newAccount(ctx) {
         const password = params.password;
         const address = params.address;
         const phone = params.phone;
+        const recaptchaToken = params.recaptchaToken;
         if(!(userName && email && password)) {
             throw 'Missing params';
         }
@@ -67,6 +69,32 @@ async function newAccount(ctx) {
         ctx.body = {status:"userError", message: err};
         return;
     }
+
+    const verifyCaptchaOptions = {
+        uri: "https://www.google.com/recaptcha/api/siteverify",
+        json: true,
+        form: {
+            secret: '6LfC1KYZAAAAAIJE7gA5St_20ZsXuy5wYNRxWXsv',
+            response: params.recaptchaToken
+        }
+    };
+
+    request.post(verifyCaptchaOptions, function (err, response, body) {
+            if (err) {
+                ctx.response.status = 500;
+                // Return error message only in debug!
+                ctx.body = {status:"internalError", message: err.message};
+                return;
+            }
+
+            if (!body.success) {
+                ctx.response.status = 500;
+                // Return error message only in debug!
+                ctx.body = {status:"internalError", message: err.message};
+                return;
+            }
+        }
+    );
 
     try {
         const newAccountResult = await pg.newAccount(params.userName, params.email, params.password, params.address, params.phone);

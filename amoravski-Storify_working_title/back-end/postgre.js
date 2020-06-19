@@ -737,7 +737,6 @@ async function newAccount(userName, email, password, address, phone) {
     let createdAt = Math.floor(new Date() / 1000);
 
     let hash = bcrypt.hashSync(password, 10);
-    console.log(address)
     const result = await pool.query('INSERT INTO users (user_name, email, password, created_at, status, address, phone) VALUES ($1,$2,$3,to_timestamp($4), $5, $6, $7) RETURNING id', [userName, email, hash, createdAt, 1, address, phone]);
 
     const userId = result.rows[0].id;
@@ -955,10 +954,8 @@ async function resetPassword(id, password) {
 
     const verificationQueryResult = await pool.query('SELECT user_id FROM verification WHERE verification_id=$1;',[id]);
 
-    console.log(id);
     try {
         var userId = verificationQueryResult.rows[0].user_id;
-        console.log(userId);
     } catch (err) {
         return {status: 'userError', message: "Verification ID invalid"};
     }
