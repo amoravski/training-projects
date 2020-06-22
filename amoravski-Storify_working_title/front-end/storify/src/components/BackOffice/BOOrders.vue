@@ -84,7 +84,10 @@
 </template>
 
 <script>
+//import jwt_decode from 'jwt-decode';
 import axios from 'axios';
+import { format } from 'date-fns';
+  
 import BOOrder from './BOOrder.vue';
 import Header from './BOHeader.vue';
 
@@ -110,21 +113,26 @@ export default {
         upper: 0,
       },
       date: {
-        lower: '',
-        upper: '',
+        lower: format(new Date(), 'yyyy-MM-dd'),
+        upper: format(new Date(), 'yyyy-MM-dd'),
       },
       time: {
-        lower: '',
-        upper: '',
+        lower: '00:00',
+        upper: '23:59',
       },
       page: 0,
       ordersCount: 0,
       asc: false,
-      sort: ''
+      sort: '',
+      token: ''
     };
   },
 
   mounted () {
+    if(typeof localStorage.getItem('JWT_admin_account_storify') != undefined && localStorage.getItem('JWT_admin_account_storify') != null) {
+      let jwt = localStorage.getItem('JWT_admin_account_storify');
+      this.token = jwt;
+    }
     this.getOrders();
   },
   methods: {
@@ -145,6 +153,7 @@ export default {
       url += this.userNameFilter ? `&userName=${this.userNameFilter}` : '';
       url += this.statusFilter ? `&status=${this.statusFilter}` : '';
 
+      url += this.token ? `&token=${this.token}` : '';
       url += this.sort ? `&sort=${this.sort}` : '';
       url += this.asc ? `&ord=asc` : '&ord=desc';
       url += this.priceFilter.upper > 0 ? `&lowerPrice=${this.priceFilter.lower * 100}&upperPrice=${this.priceFilter.upper * 100}` : '';

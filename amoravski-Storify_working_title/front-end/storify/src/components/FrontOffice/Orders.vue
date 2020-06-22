@@ -60,7 +60,8 @@ export default {
       ordersCount: 0,
       asc: false,
       sort: '',
-      userId: null
+      userId: null,
+      jwt: '',
     };
   },
 
@@ -84,6 +85,7 @@ export default {
       let url = backendurl + `order?offset=${this.page*10}&limit=10&userId=${this.userId}`;
       url += this.asc ? `&ord=asc` : '&ord=desc';
       url += this.sort ? `&sort=${this.sort}` : '';
+      url += this.jwt ? `&token=${this.jwt}` : '';
       url += upperPrice > 0 ? `&lowerPrice=${lowerPrice * 100}&upperPrice=${upperPrice * 100}` : '';
       // Make request
       axios({ method:"GET", "url": url})

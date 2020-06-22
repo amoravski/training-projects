@@ -3,7 +3,6 @@
       <Header />
       <h2>Users</h2>
 
-
     <div>
       <label for="idFilter"><b>Id search: </b></label>
       <input style="width: 40rem;" v-model="idFilter" type="text" id="idFilter"/>
@@ -12,7 +11,6 @@
       <label for="emailFilter"><b>Email search: </b></label>
       <input style="width: 40rem;" v-model="emailFilter" type="text" id="emailFilter"/>
     </div>
-
 
     <div>
       <label for="statusFilter"><b>Status: </b></label>
@@ -23,7 +21,6 @@
         <option value=""></option>
       </select >
     </div>
-
 
     <div>
       Date filter: from
@@ -91,10 +88,15 @@ export default {
       page: 0,
       usersCount: 0,
       asc: false,
+      token: '',
     };
   },
 
   mounted () {
+    if(typeof localStorage.getItem('JWT_admin_account_storify') != undefined && localStorage.getItem('JWT_admin_account_storify') != null) {
+      let jwt = localStorage.getItem('JWT_admin_account_storify');
+      this.token = jwt;
+    }
     this.getUsers();
   },
 
@@ -113,6 +115,7 @@ export default {
       url += this.nameFilter ? `&userName=${this.nameFilter}` : '';
       url += this.emailFilter ? `&email=${this.emailFilter}` : '';
       url += this.statusFilter ? `&status=${this.statusFilter}` : '';
+      url += this.token ? `&token=${this.token}` : '';
       url += this.date.upper && this.time.upper ? `&lowerDate=${this.date.lower + 'T' +this.time.lower}&upperDate=${this.date.upper + 'T' +this.time.upper}` : '';
 
       url += this.sort ? `&sort=${this.sort}` : '';

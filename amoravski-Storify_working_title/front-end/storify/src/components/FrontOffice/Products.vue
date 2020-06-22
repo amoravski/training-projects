@@ -30,7 +30,6 @@
             <tr>
               <th>Name</th>
               <th style="text-align:right">Price</th>
-              <th></th>
               <th>Quantity</th>
               <th style="text-align:right">Price(total)</th>
               <th></th>
@@ -41,9 +40,9 @@
             <CartItem @quantityChanged="addToCart" @removed="removeCart" v-for="cartItem in cart" v-bind:key="cartItem.id" v-bind:cartItem=cartItem />
             <tr>
               <th>Total Price</th>
-              <td style="text-align:right">{{ formatMoney(totalCartPrice()) }}</td>
-              <td>лв.</td>
               <th></th>
+              <th></th>
+              <td style="text-align:right">{{ formatMoney(totalCartPrice()) }}</td>
               <th></th>
             </tr>
           </tbody>

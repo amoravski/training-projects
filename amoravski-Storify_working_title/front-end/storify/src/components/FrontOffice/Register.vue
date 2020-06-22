@@ -17,6 +17,9 @@
       <label for="password">Password:</label>
       <input v-model="form.password" name="password" type="password">
 
+      <label for="confirmPassword">Confirm Password:</label>
+      <input v-model="form.confirmPassword" name="confirmPassword" type="password">
+
       <input v-on:click="submitCaptcha" type="submit" value="Submit">
       <vueRecaptcha
         ref="recaptcha"
@@ -45,20 +48,25 @@ export default {
         email: '',
         phone: '',
         address: '',
-        password: ''
+        password: '',
+        confirmPassword: '',
       },
     }
   },
 
   mounted () {
       let recaptchaScript = document.createElement('script')
-      recaptchaScript.setAttribute('src', 'https://www.google.com/recaptcha/api.j?onload=vueRecaptchaApiLoaded&render=explicits')
+      recaptchaScript.setAttribute('src', 'https://www.google.com/recaptcha/api.js?onload=vueRecaptchaApiLoaded&render=explicits')
       document.head.appendChild(recaptchaScript)
   },
 
   methods: {
 
     submit (recaptchaToken) {
+      if(this.form.password != this.form.confirmPassword) {
+        alert("Passwords do not match");
+        return;
+      }
       const backendurl = 'http://localhost:3000/';
       let url = backendurl + 'account';
       axios({ method:"POST", "url": url, "data": {userName: this.form.username, email: this.form.email, password: this.form.password, phone: this.form.phone, address: this.form.address, recaptchaToken: recaptchaToken}})

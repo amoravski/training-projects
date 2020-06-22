@@ -48,7 +48,7 @@
           </tr>
         </thead>
         <tbody>
-          <BOProduct @updated="updateProduct" @removed="removeProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product />
+          <BOProduct @updated="updateProduct" @removed="removeProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product v-bind:roles=roles />
         </tbody>
     </table>
 
@@ -61,6 +61,8 @@
 
 <script>
 import axios from 'axios';
+import jwt_decode from 'jwt-decode';
+
 import Header from './BOHeader.vue';
 import BOProduct from './BOProduct.vue';
 import BONewProductForm from './BONewProductForm.vue';
@@ -90,10 +92,15 @@ export default {
       page: 0,
       count:0,
       returnCount: true,
+      roles: [],
     }
   },
 
   mounted () {
+    if(typeof localStorage.getItem('JWT_admin_account_storify') != undefined && localStorage.getItem('JWT_admin_account_storify') != null) {
+      let jwt = localStorage.getItem('JWT_admin_account_storify');
+      this.roles = jwt_decode(jwt).roles;
+    }
     this.getProducts();
   },
 

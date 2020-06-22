@@ -8,12 +8,12 @@
       <td v-if="!updateFormActive" >{{ formatTags() }}</td>
 
       <!-- Buttons -->
-      <td v-if="!updateFormActive" >
+      <td v-if="!updateFormActive && roles.includes('product_manager')" >
         <button style="background-color: red" v-on:click="removed" >
           Remove
         </button>
       </td>
-      <td>
+      <td v-if="roles.includes('product_manager')">
         <button style="background-color: green" v-on:click="toggleUpdateForm" >
           {{updateFormActive ? "Close Form" : "Edit"}}
         </button>
@@ -29,7 +29,7 @@ import BOUpdateProductForm from './BOUpdateProductForm.vue';
 
 export default {
   name: 'BOProduct',
-  props: [ 'product' ],
+  props: [ 'product', 'roles' ],
   components: { BOUpdateProductForm },
 
   data () {

@@ -3,7 +3,6 @@
       <!-- Properties -->
       <td>{{ cartItem.name }}</td>
       <td style="text-align:right">{{ formatMoney(cartItem.price, 1) }}</td>
-      <td>лв.</td>
       <td><input @change="quantityChanged" name="quantity" type="number" v-model="cartItem.quantity" id="quantity"></td>
       <td style="text-align:right">{{ formatMoney(cartItem.price, cartItem.quantity) }}</td>
       <!-- Buttons -->
