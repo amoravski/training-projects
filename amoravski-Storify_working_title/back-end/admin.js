@@ -19,10 +19,11 @@ async function getAdmins(ctx) {
     id = filter.id;
     userName = filter.userName;
     email = filter.email;
+    sort = filter.sort;
 
     try {
         ctx.response.status = 200;
-        const resGetAdmins = await pg.getAdmins(id, userName, email);
+        const resGetAdmins = await pg.getAdmins(id, userName, email, sort);
         ctx.response.body = resGetAdmins;
         return;
     } catch(err) {
@@ -58,7 +59,7 @@ async function newAdmin(ctx) {
     }
 
     try {
-        const newAdminResult = await pg.newAdmin(params.userName, params.email, params.password);
+        const newAdminResult = await pg.newAdmin(params.userName, params.email, params.password, params.roles);
         ctx.response.status = 200;
         ctx.body = newAdminResult;
         return;

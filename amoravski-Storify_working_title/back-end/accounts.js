@@ -4,6 +4,7 @@
 
 const router = require('koa-router');
 const request = require('request');
+const jwt = require('jsonwebtoken');
 const pg = require('./postgre.js');
 const accountRouter = router({
     prefix: '/account'
@@ -24,6 +25,12 @@ async function getAccounts(ctx) {
         status = filter.status;
         lowerDate = filter.lowerDate;
         upperDate = filter.upperDate;
+        token = filter.token;
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        if(!decoded.roles.includes('user_admin')) {
+            throw "Unauthorized";
+        }
     } catch(err) {
         ctx.response.status = 400;
         ctx.response.body = {status: 'userError', error: err.message};

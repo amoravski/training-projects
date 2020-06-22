@@ -793,23 +793,16 @@ async function deleteAccount(id) {
     return {status: 'ok'};
 }
 
-async function getAdmin(id, userName, email) {
+async function getAdmins(id, userName, email, sort) {
     const pool = new Pool(config);
 
     let arg = 1;
     let args = [];
     let queryCondition = '';
     if(id) {
-        if(queryCondition == '') {
-            queryCondition += ` AND id=$${arg}`;
-            arg++;
-            args.push(id);
-        }
-        else {
-            queryCondition += ` OR id=$${arg}`;
-            arg++;
-            args.push(id);
-        }
+        queryCondition += ` AND insiders.id=$${arg}`;
+        arg++;
+        args.push(id);
     }
     if(userName) {
         if(queryCondition == '') {
@@ -835,29 +828,78 @@ async function getAdmin(id, userName, email) {
             args.push(email);
         }
     }
-    let query = 'SELECT * FROM insiders WHERE status <> 0;';
-    if(queryCondition != '') {
-        query = 'SELECT * FROM insiders WHERE status <> 0' + queryCondition + ';';
+
+    queryCondition += ` GROUP BY insiders.id`;
+
+    // Ordering
+    queryCondition += ` ORDER BY `;
+    switch(sort) {
+        case 'id':
+            queryCondition+=('insiders.id');
+            break;
+        case 'user_name':
+            queryCondition+=('insiders.name');
+            break;
+        case 'email':
+            queryCondition+=('insiders.price');
+            break;
+        default:
+            queryCondition+=('insiders.id');
     }
+
+    let query = 'SELECT insiders.id, insiders.user_name, insiders.email, json_agg(role_names.name) FROM insiders INNER JOIN roles ON insiders.id=roles.user_id LEFT OUTER JOIN role_names ON roles.role_id = role_names.id WHERE status <> 0' + queryCondition + ';';
     const result = await pool.query(query, args);
     pool.end();
 
     return {status: 'ok', accounts: result.rows, count: result.rowCount};
 }
 
-async function newAdmin(userName, email, password) {
+async function newAdmin(userName, email, password, roles) {
     const pool = new Pool(config);
 
+    console.log(roles);
     //Get current moment in epoch
     let createdAt = Math.floor(new Date() / 1000);
 
     let hash = bcrypt.hashSync(password, 10);
 
-    const result = await pool.query('INSERT INTO insiders (user_name, email, password, created_at, status) VALUES ($1,$2,$3,to_timestamp($4), $5)', [userName, email, hash, createdAt, 1]);
+    const result = await pool.query('INSERT INTO insiders (user_name, email, password, created_at, status) VALUES ($1,$2,$3,to_timestamp($4), $5) RETURNING id', [userName, email, hash, createdAt, 1]);
+
+    let user_id = result.rows[0].id;
+
+    console.log(roles);
+
+    await add_roles(roles, pool, user_id);
 
     pool.end()
 
     return {status: 'ok'};
+}
+
+async function add_roles(roles, pool, user_id) {
+    let roles_query = '';
+    let roles_insert = '';
+    for(let i=0; i < roles.length; i++) {
+        roles_query += `$${i+1},`;
+        roles_insert += `(${user_id}, $${i+1}),`;
+    }
+
+    roles_query = roles_query.substring(0, roles_query.length - 1);
+    roles_insert = roles_insert.substring(0, roles_insert.length - 1);
+    
+    console.log(roles_query);
+    console.log(roles_insert);
+
+    let role_ids = await pool.query(`SELECT id FROM role_names WHERE name IN (${roles_query});`, roles);
+    var role_ids_processed = [];
+    console.log(role_ids.rows[0]);
+    console.log(role_ids.rows[0].id);
+    for(let i=0; i < role_ids.rows.length; i++) {
+        role_ids_processed.push(role_ids.rows[i].id);
+    }
+    console.log(role_ids_processed);
+    await pool.query(`INSERT INTO roles (user_id, role_id) VALUES ${roles_insert} ON CONFLICT DO NOTHING;`, role_ids_processed);
+    return;
 }
 
 async function updateAdmin(id, userName, email, password) {
@@ -903,10 +945,11 @@ async function login(email, password) {
 
 async function loginAdmin(email, password) {
     const pool = new Pool(config);
-    const userQueryResult = await pool.query('SELECT * FROM insiders WHERE email=$1;',[email]);
+    const userQueryResult = await pool.query('SELECT insiders.id, insiders.user_name, insiders.email, insiders.password, json_agg(role_names.name) FROM insiders INNER JOIN roles ON insiders.id=roles.user_id LEFT OUTER JOIN role_names ON roles.role_id = role_names.id WHERE status <> 0 AND email=$1 GROUP BY insiders.id;',[email]);
     pool.end();
     try {
         const user = userQueryResult.rows[0];
+        console.log(user);
         if(bcrypt.compareSync(password, user.password)) {
             return {status: 'ok', account: user};
         }
@@ -1019,7 +1062,7 @@ module.exports.checkAvailability = checkAvailability;
 module.exports.updateAccount = updateAccount;
 module.exports.deleteAccount = deleteAccount;
 
-module.exports.getAdmin = getAdmin;
+module.exports.getAdmins = getAdmins;
 module.exports.newAdmin = newAdmin;
 module.exports.updateAdmin = updateAdmin;
 module.exports.deleteAdmin = deleteAdmin;

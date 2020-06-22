@@ -1,5 +1,6 @@
 "use strict";
 const router = require('koa-router');
+const jwt = require('jsonwebtoken');
 const pg = require('./postgre.js');
 const orderRouter = router({
     prefix: '/order'
@@ -13,29 +14,67 @@ async function getOrders(ctx) {
     const filter = ctx.request.query ? ctx.request.query : {};
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
-        const orderListResult = await pg.getOrders(
-            filter.id,
-            filter.orderId,
-            filter.name,
-            filter.userName,
-            filter.tag,
-            filter.lowerPrice,
-            filter.upperPrice,
-            filter.lowerQuantity,
-            filter.upperQuantity,
-            filter.lowerDate,
-            filter.upperDate,
-            filter.sort,
-            filter.ord,
-            filter.limit,
-            filter.offset,
-            filter.userId,
-            filter.status
-        );
-        ctx.response.status = 200;
-        ctx.body = orderListResult;
-        return;
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(filter.token, secret);
+        if(decoded.roles.includes('accountant')) {
+            const orderListResult = await pg.getOrders(
+                filter.id,
+                filter.orderId,
+                filter.name,
+                filter.userName,
+                filter.tag,
+                filter.lowerPrice,
+                filter.upperPrice,
+                filter.lowerQuantity,
+                filter.upperQuantity,
+                filter.lowerDate,
+                filter.upperDate,
+                filter.sort,
+                filter.ord,
+                filter.limit,
+                filter.offset,
+                filter.userId,
+                filter.status
+            );
+            ctx.response.status = 200;
+            ctx.body = orderListResult;
+            return;
+        }
+        else if(decoded.type == 'user') {
+            const orderListResult = await pg.getOrders(
+                filter.id,
+                filter.orderId,
+                filter.name,
+                decoded.userName,
+                filter.tag,
+                filter.lowerPrice,
+                filter.upperPrice,
+                filter.lowerQuantity,
+                filter.upperQuantity,
+                filter.lowerDate,
+                filter.upperDate,
+                filter.sort,
+                filter.ord,
+                filter.limit,
+                filter.offset,
+                filter.userId,
+                filter.status
+            );
+            ctx.response.status = 200;
+            ctx.body = orderListResult;
+            return;
+        }
+        else {
+            ctx.response.status = 401;
+            ctx.body = {status:"userError"};
+            return;
+        }
     } catch(err) {
+        if ( err.message == "jwt must be provided") {
+            ctx.response.status = 400;
+            ctx.body = {status:"userError", message: err.message};
+            return;
+        }
         ctx.response.status = 500;
         // Return error message only in debug!
         ctx.body = {status:"internalError", message: err.message};
