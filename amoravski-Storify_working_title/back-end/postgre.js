@@ -1040,6 +1040,75 @@ async function dispatchOrder(order_id) {
     return {status: 'ok'};
 }
 
+async function getRoles() {
+    const pool = new Pool(config);
+    const result = await pool.query(`SELECT *  FROM role_names;`);
+    pool.end();
+    return {status: 'ok', roles: result.rows};
+}
+
+async function addRole(roleName) {
+    const pool = new Pool(config);
+    const result = await pool.query(`INSERT INTO role_names (name) VALUES ($1);`, [roleName]);
+    pool.end();
+    return {status: 'ok'};
+}
+
+async function removeRole(roleId) {
+    const pool = new Pool(config);
+    const result = await pool.query(`DELETE FROM role_names WHERE id=$1`, [roleId]);
+    pool.end();
+    return {status: 'ok'};
+}
+
+async function getRolesUser(id) {
+    const pool = new Pool(config);
+    const result = await pool.query(`SELECT *  FROM roles WHERE user_id=$1;`, [id]);
+    pool.end();
+    return {status: 'ok', roles: result.rows};
+}
+
+async function addRoleUser(userId, roleId) {
+    const pool = new Pool(config);
+    const result = await pool.query(`INSERT INTO roles (user_id, role_id) VALUES ($1,$2);`, [userId, roleId]);
+    pool.end();
+    return {status: 'ok'};
+}
+
+async function removeRoleUser(userId, roleId) {
+    const pool = new Pool(config);
+    const result = await pool.query(`DELETE FROM roles WHERE user_id=$1 AND role_id = $2;`, [userId, roleId]);
+    pool.end();
+    return {status: 'ok'};
+}
+async function getPermissions() {
+    const pool = new Pool(config);
+    const result = await pool.query(`SELECT *  FROM permission_names;`);
+    pool.end();
+    return {status: 'ok', roles: result.rows};
+}
+
+async function getRolePermissions(id) {
+    const pool = new Pool(config);
+    const result = await pool.query(`SELECT *  FROM permissions WHERE role_id=$1;`, [id]);
+    pool.end();
+    return {status: 'ok', roles: result.rows};
+}
+
+async function addPermission(permissionId, roleId) {
+    const pool = new Pool(config);
+    const result = await pool.query(`INSERT INTO permissions (permission_id, role_id) VALUES ($1,$2);`, [permissionId, roleId]);
+    pool.end();
+    return {status: 'ok'};
+}
+
+async function removePermission(permissionId, roleId) {
+    const pool = new Pool(config);
+    const result = await pool.query(`DELETE FROM permissions WHERE permission_id=$1 AND role_id = $2;`, [permissionId, roleId]);
+    pool.end();
+    return {status: 'ok'};
+}
+
 module.exports.get_products = get_products;
 module.exports.create_product = create_product;
 module.exports.update_product = update_product;
@@ -1079,3 +1148,15 @@ module.exports.sendResetEmail = sendResetEmail;
 module.exports.getCategories = getCategories;
 
 module.exports.dispatchOrder = dispatchOrder;
+
+module.exports.getRoles = getRoles;
+module.exports.addRole = addRole;
+module.exports.removeRole = removeRole;
+module.exports.getRolesUser = getRolesUser;
+module.exports.addRoleUser = addRoleUser;
+module.exports.removeRoleUser = removeRoleUser;
+
+module.exports.getPermissions = getPermissions;
+module.exports.getRolePermissions = getRolePermissions;
+module.exports.addPermission = addPermission;
+module.exports.removePermission = removePermission;

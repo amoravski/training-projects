@@ -17,6 +17,8 @@ const authentication = require('./authentication.js');
 const verification = require('./verification.js');
 const forgot = require('./forgot.js');
 const dispatch = require('./dispatch.js');
+const roles = require('./roles.js');
+const permissions = require('./permissions.js');
 
 const app = new Koa();
 
@@ -40,6 +42,8 @@ app.use(authentication.routes());
 app.use(verification.routes());
 app.use(forgot.routes());
 app.use(dispatch.routes());
+app.use(roles.routes());
+app.use(permissions.routes());
 
 // OPTIONS requests
 app.use(product.allowedMethods());
@@ -53,6 +57,8 @@ app.use(authentication.allowedMethods());
 app.use(verification.allowedMethods());
 app.use(forgot.allowedMethods());
 app.use(dispatch.allowedMethods());
+app.use(roles.allowedMethods());
+app.use(permissions.allowedMethods());
 
 // Static files 
 app.use(serve('./upload'));
