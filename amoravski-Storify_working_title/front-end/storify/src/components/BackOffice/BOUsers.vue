@@ -137,6 +137,7 @@ export default {
           },
           error => {
             console.log(error);
+            alert(error.response.data.message);
           }
         );
     },
@@ -149,6 +150,7 @@ export default {
           this.getUsers();
         }
       , error => {
+            alert(error.response.data.message);
         console.log(error);
       });
     },
@@ -158,6 +160,7 @@ export default {
       axios({ method:"DELETE", "url": url}).then(() => { this.getUsers();
         }
       , error => {
+            alert(error.response.data.message);
         console.log(error);
       });
     },

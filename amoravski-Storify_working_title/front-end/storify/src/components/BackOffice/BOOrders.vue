@@ -175,6 +175,7 @@ export default {
           },
           error => {
             console.log(error);
+            alert(error.response.data.message);
           }
         );
     },
@@ -187,6 +188,7 @@ export default {
         }
       , error => {
         console.log(error);
+            alert(error.response.data.message);
       });
     },
 
@@ -199,6 +201,7 @@ export default {
         }
       , error => {
         console.log(error);
+            alert(error.response.data.message);
       });
     },
 
@@ -210,6 +213,7 @@ export default {
         }
       , error => {
         console.log(error);
+            alert(error.response.data.message);
       });
     },
 

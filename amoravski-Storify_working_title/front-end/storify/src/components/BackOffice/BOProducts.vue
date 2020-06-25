@@ -139,6 +139,7 @@ export default {
         }
       }, error => {
         console.log(error);
+            alert(error.response.data.message);
       });
     },
 
@@ -180,6 +181,7 @@ export default {
         }
       , error => {
         console.log(error);
+            alert(error.response.data.message);
       });
     },
 
@@ -190,6 +192,7 @@ export default {
         }
       , error => {
         console.log(error);
+            alert(error.response.data.message);
       });
     },
     newFormButton: function() {
@@ -201,6 +204,7 @@ export default {
         }
       , error => {
         console.log(error);
+            alert(error.response.data.message);
       });
     },
     goForwardsPage: function() {
