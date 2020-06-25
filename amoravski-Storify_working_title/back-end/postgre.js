@@ -250,7 +250,7 @@ async function create_product(name,price,quantity,file_path,tags) {
     //Get current moment in epoch
     let created_at = Math.floor(new Date() / 1000);
 
-    let response = await pool.query(`INSERT INTO products (name, price, quantity, added_by, created_at, picture_path) VALUES ($1, $2, $3, $4,to_timestamp($5), $6) RETURNING id;`, [name,price,quantity,added_by,created_at,file_path]);
+    let response = await pool.query(`INSERT INTO products (name, price, quantity, added_by, created_at, picture_path, quantity_type, status) VALUES ($1, $2, $3, $4,to_timestamp($5), $6, 'br', 'active') RETURNING id;`, [name,price,quantity,added_by,created_at,file_path]);
     let product_id = response.rows[0].id;
 
     await add_tags(JSON.parse(tags), pool, product_id);
@@ -586,7 +586,7 @@ async function create_order(product_id, quantity, value, paypal_id, userId) {
     //Get current moment in epoch
     let created_at = new Date();
 
-    const result = await pool.query(`INSERT INTO orders (user_id, product_id, status, quantity, value, started_at, paypal_id) VALUES ($1,$2,$3,$4,$5, $6,$7) RETURNING id;`, [ userId ,product_id, 1 ,quantity,value,created_at,paypal_id]);
+    const result = await pool.query(`INSERT INTO orders (user_id, product_id, status, quantity, value, started_at, paypal_id, quantity_type) VALUES ($1,$2,$3,$4,$5, $6,$7, 'br') RETURNING id;`, [ userId ,product_id, 1 ,quantity,value,created_at,paypal_id]);
     const result_update = await pool.query('UPDATE products SET quantity = quantity - $1 WHERE id=$2', [quantity,product_id]);
 
     // Close connection
