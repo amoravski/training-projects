@@ -2,22 +2,20 @@
   <div>
     <div>
       {{ permission.name }}
-    </div>
-    <div>
-      {{ permission.status }}
-    </div>
-    <button v-if="permission.status=='active'" style="background-color: green" v-on:click="added" >
+      {{ permission.status ? "Active" : "Inactive" }}
+    <button v-if="!permission.status" style="background-color: green" v-on:click="added" >
       Add
     </button>
-    <button v-if="permission.status=='inactive'" style="background-color: red" v-on:click="revoked" >
+    <button v-if="permission.status" style="background-color: red" v-on:click="revoked" >
       Revoke
     </button>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'BORole',
+  name: 'BOPermission',
   props: [ 'permission' ],
 
   methods: {

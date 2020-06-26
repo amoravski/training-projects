@@ -6,16 +6,13 @@
     <table>
       <thead>
         <tr>
-          <th>Permission Name</th>
-          <th>ID</th>
-          <th>Products</th>
-          <th>Orders</th>
-          <th>Users</th>
-          <th>Roles</th>
+          <th>Role name</th>
+          <th>Permissions</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
-        <BORole v-for="role in roles" v-bind:key="role.id" v-bind:order=role />
+        <BORole v-for="role in roles" v-bind:key="role.id" v-bind:role=role v-bind:token=token />
       </tbody>
     </table>
 
@@ -32,13 +29,14 @@ import BORole from './BORole.vue';
 import Header from './BOHeader.vue';
 
 export default {
-  name: 'BORole',
+  name: 'BORoles',
   components: { Header, BORole },
 
   data () {
     return {
       roles : [], 
-      token: ''
+    token: '',
+    empty: false,
     };
   },
 

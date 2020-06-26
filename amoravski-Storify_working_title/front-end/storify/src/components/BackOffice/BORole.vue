@@ -1,7 +1,11 @@
 <template>
     <tr>
       <td>
-        <BOPermission v-for="permission in permissions" v-bind:key="permission.id" v-bind:permission="permission">
+        {{ role.name }}
+      </td>
+
+      <td>
+        <BOPermission v-for="permission in permissions" v-bind:key="permission.id" v-bind:permission="permission" @added="addPermission" @revoked="revokePermission"/>
       </td>
       <td>
         <button style="background-color: red" v-on:click="removed" >
@@ -16,14 +20,19 @@ import axios from 'axios';
 import BOPermission from './BOPermission';
 export default {
   name: 'BORole',
-  props: [ 'role' ],
+  props: [ 'role', 'token' ],
 
-  componetns: { BOPermission },
+  components: { BOPermission },
 
   data () {
     return {
-      permissions: []
+        permissions: [],
+        empty: false,
     };
+  },
+
+  mounted () {
+    this.getPermissions();
   },
 
   methods: {
@@ -34,31 +43,35 @@ export default {
 
     getPermissions: function () {
       // Build url
-      const backendurl = 'http://localhost:3000/';
-      let url = backendurl + `permissions`;
+        const backendurl = 'http://localhost:3000/';
+        let url = backendurl + `permissions?id=${this.role.id}&token=${this.token}`;
 
-      // Make request
       axios({ method:"GET", "url": url})
         .then(
           result => {
             let parsed = JSON.parse(JSON.stringify(result.data));
             this.permissions = parsed.permissions; 
-            if(this.permissions.length == 0) {
-              this.empty= true;
-            }
-            else {
-              this.empty = false;
-            }
           },
           error => {
-            console.log(error);
+            console.log(error.response);
             alert(error.response.data.message);
           }
         );
     },
 
-    removePermissions: function (event) {
-      var url = `http://localhost:3000/permissions?permissionId=${event}&roleId=${this.role.id}`
+    addPermission: function (event) {
+      var url = `http://localhost:3000/permissions`;
+      axios({ method:"PUT", "url": url, data: { roleId: this.role.id, permissionId: event, token: this.token}}).then(() => { 
+          this.getPermissions();
+        }
+      , error => {
+        console.log(error);
+        alert(error.response.data.message);
+      });
+    },
+
+    revokePermission: function (event) {
+      var url = `http://localhost:3000/permissions?permissionId=${event}&roleId=${this.role.id}&token=${this.token}`
       axios({ method:"DELETE", "url": url}).then(() => { 
           this.getPermissions();
         }
@@ -67,6 +80,6 @@ export default {
         alert(error.response.data.message);
       });
     },
-  }
+  },
 }
 </script>

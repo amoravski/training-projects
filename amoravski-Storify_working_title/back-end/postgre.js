@@ -857,7 +857,6 @@ async function getAdmins(id, userName, email, sort) {
 async function newAdmin(userName, email, password, roles) {
     const pool = new Pool(config);
 
-    console.log(roles);
     //Get current moment in epoch
     let createdAt = Math.floor(new Date() / 1000);
 
@@ -867,7 +866,6 @@ async function newAdmin(userName, email, password, roles) {
 
     let user_id = result.rows[0].id;
 
-    console.log(roles);
 
     await add_roles(roles, pool, user_id);
 
@@ -887,17 +885,12 @@ async function add_roles(roles, pool, user_id) {
     roles_query = roles_query.substring(0, roles_query.length - 1);
     roles_insert = roles_insert.substring(0, roles_insert.length - 1);
     
-    console.log(roles_query);
-    console.log(roles_insert);
 
     let role_ids = await pool.query(`SELECT id FROM role_names WHERE name IN (${roles_query});`, roles);
     var role_ids_processed = [];
-    console.log(role_ids.rows[0]);
-    console.log(role_ids.rows[0].id);
     for(let i=0; i < role_ids.rows.length; i++) {
         role_ids_processed.push(role_ids.rows[i].id);
     }
-    console.log(role_ids_processed);
     await pool.query(`INSERT INTO roles (user_id, role_id) VALUES ${roles_insert} ON CONFLICT DO NOTHING;`, role_ids_processed);
     return;
 }
@@ -949,7 +942,6 @@ async function loginAdmin(email, password) {
     pool.end();
     try {
         const user = userQueryResult.rows[0];
-        console.log(user);
         if(bcrypt.compareSync(password, user.password)) {
             return {status: 'ok', account: user};
         }
@@ -1085,14 +1077,29 @@ async function getPermissions() {
     const pool = new Pool(config);
     const result = await pool.query(`SELECT *  FROM permission_names;`);
     pool.end();
-    return {status: 'ok', roles: result.rows};
+    return {status: 'ok', permissions: result.rows};
 }
 
 async function getRolePermissions(id) {
     const pool = new Pool(config);
-    const result = await pool.query(`SELECT *  FROM permissions WHERE role_id=$1;`, [id]);
+    const allPermissionsResult = await pool.query(`SELECT *  FROM permission_names;`);
+    const userPermissionsResult = await pool.query(`SELECT *  FROM permissions WHERE role_id=$1;`, [id]);
+    const allPermissions = allPermissionsResult.rows;
+    const userPermissions = userPermissionsResult.rows;
+    for(let i=0; i< allPermissions.length; i++) {
+        for(let j=0; j < userPermissions.length; j++) {
+            if(allPermissions[i].id == userPermissions[j].permission_id) {
+                allPermissions[i].status = true;
+                break;
+            }
+            else {
+                allPermissions[i].status = false;
+            }
+        }
+    }
+
     pool.end();
-    return {status: 'ok', roles: result.rows};
+    return {status: 'ok', permissions: allPermissions};
 }
 
 async function addPermission(permissionId, roleId) {
@@ -1107,6 +1114,28 @@ async function removePermission(permissionId, roleId) {
     const result = await pool.query(`DELETE FROM permissions WHERE permission_id=$1 AND role_id = $2;`, [permissionId, roleId]);
     pool.end();
     return {status: 'ok'};
+}
+
+async function verifyPermissions(roles, permissionName) {
+    const pool = new Pool(config);
+    console.log(roles);
+    let roleIds = '(';
+    for(let i=0; i<roles.length; i++) {
+        roleIds+="'";
+        roleIds+=roles[i];
+        roleIds+="'";
+        roleIds+=',';
+    }
+    roleIds = roleIds.substring(0,roleIds.length-1);
+    roleIds += ')';
+    console.log(roleIds)
+    const result = await pool.query(`SELECT * FROM permissions INNER JOIN permission_names ON permissions.permission_id=permission_names.id INNER JOIN role_names ON permissions.role_id=role_names.id WHERE permission_names.name=$1 AND role_names.name IN ${roleIds};`, [permissionName]);
+    pool.end();
+    if(result.rows.length) {
+        console.log(result.rows);
+        return {status: 'ok'};
+    }
+    return {status: 'error', message: 'Unauthorized'};
 }
 
 module.exports.get_products = get_products;
@@ -1160,3 +1189,5 @@ module.exports.getPermissions = getPermissions;
 module.exports.getRolePermissions = getRolePermissions;
 module.exports.addPermission = addPermission;
 module.exports.removePermission = removePermission;
+
+module.exports.verifyPermissions = verifyPermissions;

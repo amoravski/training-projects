@@ -7,6 +7,7 @@
         <router-link v-if="roles.includes('accountant') || roles.includes('product_manager')" tag="button" class="router_link" to="/boproducts">Products</router-link>
         <router-link v-if="roles.includes('accountant')"  tag="button" class="router_link" to="/boorders">Orders</router-link>
         <router-link v-if="roles.includes('user_admin')" tag="button" class="router_link" to="/bousers">Users</router-link>
+        <router-link v-if="roles.includes('user_admin')" tag="button" class="router_link" to="/boroles">Roles</router-link>
         <button v-on:click="logout">Logout</button>
       </div>
       <div v-if="!loggedIn" style="float:right;">
