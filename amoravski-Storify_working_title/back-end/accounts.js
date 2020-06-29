@@ -19,6 +19,17 @@ async function getAccounts(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
         const filter = ctx.request.query ? ctx.request.query : {};
+        var token = filter.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'users_r');
+        console.log(permissions);
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         id = filter.id;
         userName = filter.userName;
         email = filter.email;
@@ -26,11 +37,6 @@ async function getAccounts(ctx) {
         lowerDate = filter.lowerDate;
         upperDate = filter.upperDate;
         token = filter.token;
-        const secret = process.env.JWT_SECRET || 'secret';
-        var decoded = jwt.verify(token, secret);
-        if(!decoded.roles.includes('user_admin')) {
-            throw "Unauthorized";
-        }
     } catch(err) {
         ctx.response.status = 400;
         ctx.response.body = {status: 'userError', error: err.message};
@@ -50,8 +56,19 @@ async function getAccounts(ctx) {
 }
 
 async function newAccount(ctx) {
-    const params = ctx.request.body;
     try {
+        var params = ctx.request.body;
+        var token = params.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'users_c');
+        console.log(permissions);
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         const userName = params.userName;
         const email = params.email;
         const password = params.password;
@@ -118,7 +135,18 @@ async function newAccount(ctx) {
 
 async function updateAccount(ctx) {
     try {
-        params = ctx.request.body;
+        var params = ctx.request.body;
+        var token = params.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'users_u');
+        console.log(permissions);
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         id = params.id
         user_name = params.user_name;
         email = params.email;
@@ -147,8 +175,24 @@ async function updateAccount(ctx) {
 }
 
 async function deleteAccount(ctx) {
-    const filter = ctx.request.query ? ctx.request.query : {};
-    const id = filter.id;
+    try {
+        var filter = ctx.request.query ? ctx.request.query : {};
+        var id = filter.id;
+        var token = filter.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'users_d');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
+    } catch(err) {
+        ctx.response.status = 400;
+        ctx.body = {status:"userError", message: "Missing params"};
+        return;
+    }
     try {
         const deleteAccountResult = await pg.deleteAccount(id);
         ctx.response.status = 200;

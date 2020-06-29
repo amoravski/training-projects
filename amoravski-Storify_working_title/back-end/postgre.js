@@ -720,9 +720,9 @@ async function getAccounts(id, userName, email, status, lowerDate, upperDate) {
         args.push(upperDate);
     }
 
-    let query = 'SELECT users.id,users.user_name,users.email,user_statuses.status_name, users.created_at FROM users INNER JOIN user_statuses ON users.status = user_statuses.id WHERE status <> 0;';
+    let query = 'SELECT users.id,users.user_name,users.email,user_statuses.status_name, users.created_at FROM users INNER JOIN user_statuses ON users.status = user_statuses.id WHERE status <> 3;';
     if(queryCondition != '') {
-        query = 'SELECT users.id,users.user_name,users.email,user_statuses.status_name, users.created_at FROM users INNER JOIN user_statuses ON users.status = user_statuses.id WHERE status <> 0' + queryCondition + ';';
+        query = 'SELECT users.id,users.user_name,users.email,user_statuses.status_name, users.created_at FROM users INNER JOIN user_statuses ON users.status = user_statuses.id WHERE status <> 3' + queryCondition + ';';
     }
     const result = await pool.query(query, args);
     pool.end();
@@ -786,7 +786,7 @@ async function updateAccount(id, userName, email, password, createdAt) {
 async function deleteAccount(id) {
     const pool = new Pool(config);
 
-    const result = await pool.query('UPDATE users SET status=0 WHERE id=$1',[id]);
+    const result = await pool.query('UPDATE users SET status=3 WHERE id=$1',[id]);
 
     pool.end()
 
@@ -1048,7 +1048,9 @@ async function addRole(roleName) {
 
 async function removeRole(roleId) {
     const pool = new Pool(config);
-    const result = await pool.query(`DELETE FROM role_names WHERE id=$1`, [roleId]);
+    const resultDeleteRolePermissions = await pool.query(`DELETE FROM permissions WHERE role_id=$1`, [roleId]);
+    const resultDeleteUserRoles = await pool.query(`DELETE FROM roles WHERE role_id=$1`, [roleId]);
+    const resultDeleteRoles = await pool.query(`DELETE FROM role_names WHERE id=$1`, [roleId]);
     pool.end();
     return {status: 'ok'};
 }
@@ -1138,6 +1140,18 @@ async function verifyPermissions(roles, permissionName) {
     return {status: 'error', message: 'Unauthorized'};
 }
 
+async function allowedInterfacesUser(id) {
+    const pool = new Pool(config);
+    const result = await pool.query('SELECT permission_names.name FROM roles INNER JOIN permissions ON roles.role_id=permissions.role_id INNER JOIN permission_names ON permission_names.id = permissions.permission_id INNER JOIN role_names ON role_names.id = roles.role_id WHERE user_id = $1;', [id]);
+    var interfaces = [];
+    for(let i=0; i< result.rows.length; i++) {
+        interfaces.push(result.rows[i].name);
+    }
+    console.log(interfaces);
+    pool.end();
+    return {status: 'ok', interfaces: interfaces};
+}
+
 module.exports.get_products = get_products;
 module.exports.create_product = create_product;
 module.exports.update_product = update_product;
@@ -1191,3 +1205,5 @@ module.exports.addPermission = addPermission;
 module.exports.removePermission = removePermission;
 
 module.exports.verifyPermissions = verifyPermissions;
+
+module.exports.allowedInterfacesUser = allowedInterfacesUser;

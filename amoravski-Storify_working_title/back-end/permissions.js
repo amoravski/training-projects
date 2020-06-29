@@ -118,7 +118,7 @@ async function removePermission(ctx) {
             throw { message: "Unauthorized"};
         }
         const secret = process.env.JWT_SECRET || 'secret';
-        var decoded = jwt.verify(params.token, secret);
+        var decoded = jwt.verify(filter.token, secret);
         const permissions = await pg.verifyPermissions(decoded.roles, 'roles_d');
         if(permissions.status != 'ok') { 
             throw { message: "Unauthorized"};

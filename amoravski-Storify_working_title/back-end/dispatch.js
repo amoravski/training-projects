@@ -14,6 +14,16 @@ async function dispatchOrder(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
         var params = ctx.request.body;
+        var token = params.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'orders_u');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         var id = params.id
         if(!id) {
             throw 'Missing id';

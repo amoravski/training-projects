@@ -15,32 +15,13 @@ async function getOrders(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
         const secret = process.env.JWT_SECRET || 'secret';
-        var decoded = jwt.verify(filter.token, secret);
-        if(decoded.roles.includes('accountant')) {
-            const orderListResult = await pg.getOrders(
-                filter.id,
-                filter.orderId,
-                filter.name,
-                filter.userName,
-                filter.tag,
-                filter.lowerPrice,
-                filter.upperPrice,
-                filter.lowerQuantity,
-                filter.upperQuantity,
-                filter.lowerDate,
-                filter.upperDate,
-                filter.sort,
-                filter.ord,
-                filter.limit,
-                filter.offset,
-                filter.userId,
-                filter.status
-            );
-            ctx.response.status = 200;
-            ctx.body = orderListResult;
-            return;
+        var token = filter.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
         }
-        else if(decoded.type == 'user') {
+        var decoded = jwt.verify(token, secret);
+        console.log(decoded);
+        if(decoded.type == 'user') {
             const orderListResult = await pg.getOrders(
                 filter.id,
                 filter.orderId,
@@ -64,11 +45,32 @@ async function getOrders(ctx) {
             ctx.body = orderListResult;
             return;
         }
-        else {
-            ctx.response.status = 401;
-            ctx.body = {status:"userError"};
-            return;
+        const permissions = await pg.verifyPermissions(decoded.roles, 'orders_r');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
         }
+        const orderListResult = await pg.getOrders(
+            filter.id,
+            filter.orderId,
+            filter.name,
+            filter.userName,
+            filter.tag,
+            filter.lowerPrice,
+            filter.upperPrice,
+            filter.lowerQuantity,
+            filter.upperQuantity,
+            filter.lowerDate,
+            filter.upperDate,
+            filter.sort,
+            filter.ord,
+            filter.limit,
+            filter.offset,
+            filter.userId,
+            filter.status
+        );
+        ctx.response.status = 200;
+        ctx.body = orderListResult;
+        return;
     } catch(err) {
         if ( err.message == "jwt must be provided") {
             ctx.response.status = 400;
@@ -85,6 +87,17 @@ async function getOrders(ctx) {
 async function updateOrder(ctx) {
     try {
         var params = ctx.request.body;
+        var token = params.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'orders_u');
+        console.log(permissions);
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         var id = params.id
         var productId = params.productId;
         var value = params.value;
@@ -115,9 +128,20 @@ async function updateOrder(ctx) {
 }
 
 async function deleteOrder(ctx) {
-    const filter = ctx.request.query ? ctx.request.query : {};
-    var id = filter.id;
     try {
+        const filter = ctx.request.query ? ctx.request.query : {};
+        var id = filter.id;
+        var token = filter.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'orders_d');
+        console.log(permissions);
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         const deleteOrderResult = await pg.deleteOrder(id);
         ctx.response.status = 200;
         ctx.body = deleteOrderResult;

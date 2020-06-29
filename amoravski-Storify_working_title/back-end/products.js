@@ -5,6 +5,7 @@
 
 const router = require('koa-router');
 const pg = require('./postgre.js');
+const jwt = require('jsonwebtoken');
 const products_router = router({
     prefix: '/product'
 });
@@ -64,10 +65,21 @@ async function create_product(ctx) {
 
     try {
         var params = ctx.request.body;
+        var token = params.token;
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'products_c');
+        console.log(permissions);
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         var file = ctx.request.files.file;
     } catch (err) {
         ctx.response.status = 400;
-        ctx.body = {status:"userError", message: "Incorrect type request"};
+        ctx.body = {status:"userError", message: err.message};
         return;
     }
 
@@ -101,6 +113,16 @@ async function update_product(ctx) {
     // Throws error if request isn't multipart
     try {
         var params = ctx.request.body;
+        var token = params.token
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'products_u');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         var file = ctx.request.files.file;
     } catch (err) {
         ctx.response.status = 400;
@@ -137,11 +159,27 @@ async function update_product(ctx) {
 async function remove_product(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
 
-    var params = ctx.request.query;
-
-    if(!(params.id)) {
+    try {
+        var params = ctx.request.query;
+        var token = params.token
+        if(!token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'products_d');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
+        if(!(params.id)) {
+            ctx.response.status = 400;
+            ctx.body = {status:"userError", message: "Missing parameter"};
+            return;
+        }
+    } catch(err) {
         ctx.response.status = 400;
-        ctx.body = {status:"userError", message: "Missing parameter"};
+        // Return error message only in debug!
+        ctx.body = {status:"userError", message: err.message};
         return;
     }
 

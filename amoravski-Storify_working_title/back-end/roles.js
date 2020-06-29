@@ -7,23 +7,28 @@ const rolesRouter = router({
 });
 
 rolesRouter.get('/', getRoles);
-rolesRouter.get('/', addRole);
-rolesRouter.get('/', removeRole);
+rolesRouter.put('/', addRole);
+rolesRouter.delete('/', removeRole);
 
 rolesRouter.get('/user', getRolesUser);
 rolesRouter.put('/user', addRoleUser);
 rolesRouter.delete('/user', removeRoleUser);
 
+rolesRouter.get('/interfaces', allowedInterfacesUser);
+
 async function getRoles(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
         const filter = ctx.request.query ? ctx.request.query : {};
-        /*
-        var decoded = jwt.verify(token, secret);
-        if(!decoded.roles.includes('user_admin')) {
-            throw "Unauthorized";
+        if(!filter.token) {
+            throw { message: "Unauthorized"};
         }
-        */
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(filter.token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'roles_r');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
     } catch(err) {
         ctx.response.status = 400;
         ctx.response.body = {status: 'userError', error: err.message};
@@ -45,6 +50,15 @@ async function getRoles(ctx) {
 async function addRole(ctx) {
     try {
         params = ctx.request.body;
+        if(!params.token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(params.token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'roles_c');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         roleName = params.roleName;
         if(!(roleName)) {
             throw 'Missing params';
@@ -69,17 +83,26 @@ async function addRole(ctx) {
 }
 
 async function removeRole(ctx) {
-    const filter = ctx.request.query ? ctx.request.query : {};
-    const roleId = filter.roleId;
     try {
+        var filter = ctx.request.query ? ctx.request.query : {};
+        var roleId = filter.roleId;
+        if(!filter.token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(filter.token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'roles_d');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         const removeRoleResult = await pg.removeRole(roleId);
         ctx.response.status = 200;
         ctx.body = removeRoleResult;
         return;
     } catch(err) {
-        ctx.response.status = 500;
+        ctx.response.status = 400;
         // Return error message only in debug!
-        ctx.body = {status:"internalError", message: err.message};
+        ctx.body = {status:"userError", message: err.message};
         return;
     }
 }
@@ -87,13 +110,16 @@ async function getRolesUser(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
         const filter = ctx.request.query ? ctx.request.query : {};
-        id = filter.id;
-        /*
-        var decoded = jwt.verify(token, secret);
-        if(!decoded.roles.includes('user_admin')) {
-            throw "Unauthorized";
+        if(!filter.token) {
+            throw { message: "Unauthorized"};
         }
-        */
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(filter.token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'roles_r');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
+        id = filter.id;
     } catch(err) {
         ctx.response.status = 400;
         ctx.response.body = {status: 'userError', error: err.message};
@@ -115,6 +141,15 @@ async function getRolesUser(ctx) {
 async function addRoleUser(ctx) {
     try {
         params = ctx.request.body;
+        if(!params.token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(params.token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'roles_c');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         userId = params.id
         roleId = params.roleId;
         if(!(user_name && email)) {
@@ -140,10 +175,19 @@ async function addRoleUser(ctx) {
 }
 
 async function removeRoleUser(ctx) {
-    const filter = ctx.request.query ? ctx.request.query : {};
-    const userId = filter.userId;
-    const roleId = filter.roleId;
     try {
+        var filter = ctx.request.query ? ctx.request.query : {};
+        var userId = filter.userId;
+        var roleId = filter.roleId;
+        if(!filter.token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(filter.token, secret);
+        const permissions = await pg.verifyPermissions(decoded.roles, 'roles_d');
+        if(permissions.status != 'ok') { 
+            throw { message: "Unauthorized"};
+        }
         const removeRoleResult = await pg.removeRoleUser(userId, roleId);
         ctx.response.status = 200;
         ctx.body = removeRoleResult;
@@ -152,6 +196,44 @@ async function removeRoleUser(ctx) {
         ctx.response.status = 500;
         // Return error message only in debug!
         ctx.body = {status:"internalError", message: err.message};
+        return;
+    }
+}
+
+async function allowedInterfacesUser(ctx) { 
+    try {
+        var filter = ctx.request.query ? ctx.request.query : {};
+        if(!filter.token) {
+            throw { message: "Unauthorized"};
+        }
+        const secret = process.env.JWT_SECRET || 'secret';
+        var decoded = jwt.verify(filter.token, secret);
+        /*
+        var interfaces = [];
+        var permissions = await pg.verifyPermissions(decoded.roles, 'products_r');
+        if(permissions.status == 'ok') { 
+            interfaces.push('products');
+        }
+        permissions = await pg.verifyPermissions(decoded.roles, 'orders_r');
+        if(permissions.status == 'ok') { 
+            interfaces.push('orders');
+        }
+        permissions = await pg.verifyPermissions(decoded.roles, 'users_r');
+        if(permissions.status == 'ok') { 
+            interfaces.push('users');
+        }
+        permissions = await pg.verifyPermissions(decoded.roles, 'roles_r');
+        if(permissions.status == 'ok') { 
+            interfaces.push('roles');
+        }
+        */
+        const interfacesResult = await pg.allowedInterfacesUser(decoded.id);
+        ctx.response.status = 200;
+        ctx.body = {status: 'ok', interfaces: interfacesResult.interfaces};
+        return;
+    } catch(err) {
+        ctx.response.status = 400;
+        ctx.body = {status:"userError", message: err.message};
         return;
     }
 }
