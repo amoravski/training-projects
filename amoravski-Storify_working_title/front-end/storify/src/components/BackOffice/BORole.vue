@@ -5,10 +5,10 @@
       </td>
 
       <td>
-        <BOPermission v-for="permission in permissions" v-bind:key="permission.id" v-bind:permission="permission" @added="addPermission" @revoked="revokePermission"/>
+        <BOPermission v-for="permission in permissions" v-bind:key="permission.id" v-bind:permission="permission" v-bind:interfaces=interfaces @added="addPermission" @revoked="revokePermission"/>
       </td>
       <td>
-        <button style="background-color: red" v-on:click="removed" >
+        <button v-if="interfaces.includes('roles_d')" style="background-color: red" v-on:click="removed" >
           Remove
         </button>
       </td>
@@ -20,7 +20,7 @@ import axios from 'axios';
 import BOPermission from './BOPermission';
 export default {
   name: 'BORole',
-  props: [ 'role', 'token' ],
+  props: [ 'role', 'token', 'interfaces' ],
 
   components: { BOPermission },
 

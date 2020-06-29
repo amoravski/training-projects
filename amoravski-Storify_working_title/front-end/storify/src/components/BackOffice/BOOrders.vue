@@ -69,7 +69,7 @@
         </tr>
       </thead>
       <tbody>
-        <BOOrder @dispatched="dispatchOrder" @updated="updateOrder" @removed="removeOrder"  v-for="order in orders" v-bind:key="order.id" v-bind:order=order />
+        <BOOrder @dispatched="dispatchOrder" @updated="updateOrder" @removed="removeOrder"  v-for="order in orders" v-bind:key="order.id" v-bind:order=order v-bind:interfaces=interfaces />
       </tbody>
     </table>
 
@@ -124,7 +124,8 @@ export default {
       ordersCount: 0,
       asc: false,
       sort: '',
-      token: ''
+      token: '',
+      interfaces: [],
     };
   },
 
@@ -134,6 +135,7 @@ export default {
       this.token = jwt;
     }
     this.getOrders();
+    this.getInterfaces();
   },
   methods: {
     search: function () {
@@ -181,7 +183,7 @@ export default {
     },
 
     removeOrder: function (event) {
-      var url = `http://localhost:3000/order?id=${event}`
+      var url = `http://localhost:3000/order?id=${event}&token=${this.token}`
       axios({ method:"DELETE", "url": url}).then(() => { 
           alert("Removed Order");
           this.getOrders();
@@ -195,6 +197,7 @@ export default {
     updateOrder: function(event) {
       var url = `http://localhost:3000/order`
       console.log(event);
+      event.token = this.token;
       axios({ method:"PUT", "url": url, data: event}).then(() => {
           alert("Updated Order");
           this.getOrders();
@@ -207,7 +210,7 @@ export default {
 
     dispatchOrder: function (event) {
       var url = `http://localhost:3000/dispatch`
-      axios({ method:"POST", "url": url, data: {id: event}}).then(() => { 
+      axios({ method:"POST", "url": url, data: {id: event, token: this.token}}).then(() => { 
           alert("Dispatched Order");
           this.getOrders();
         }
@@ -266,6 +269,22 @@ export default {
         this.page--;
         this.getOrders();
       }
+    },
+
+    getInterfaces: function () {
+      const backendurl = `http://localhost:3000/`;
+      let url = backendurl + `roles/interfaces?token=${this.token}`;
+      axios({ method:"GET", "url": url})
+        .then(
+          result => {
+            let parsed = JSON.parse(JSON.stringify(result.data));
+            this.interfaces = parsed.interfaces; 
+          },
+          error => {
+            console.log(error);
+            alert(error.response.data.message);
+          }
+        );
     },
   }
 }

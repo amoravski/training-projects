@@ -11,17 +11,17 @@
       <td v-if="!updateFormActive">{{ order.status_name }}</td>
 
       <!-- Buttons -->
-      <td v-if="!updateFormActive && order.status_name == 'not_paid'" >
+      <td v-if="!updateFormActive && order.status_name == 'not_paid' && interfaces.includes('orders_d')" >
         <button style="background-color: red" v-on:click="removed" >
           Remove
         </button>
       </td>
-      <td v-if="order.status_name == 'not_paid'">
+      <td v-if="order.status_name == 'not_paid' && interfaces.includes('orders_u')">
         <button style="background-color: green" v-on:click="toggleUpdateForm" >
           {{updateFormActive ? "Close Form" : "Edit"}}
         </button>
       </td>
-      <td v-if="order.status_name == 'paid'">
+      <td v-if="order.status_name == 'paid' && interfaces.includes('orders_u')">
         <button style="background-color: green" v-on:click="dispatch" >
           Dispatch
         </button>
@@ -41,7 +41,7 @@ import BOUpdateOrderForm from './BOUpdateOrderForm.vue';
 
 export default {
   name: 'BOOrder',
-  props: [ 'order' ],
+  props: [ 'order', 'interfaces'],
 
   components: { BOUpdateOrderForm },
 

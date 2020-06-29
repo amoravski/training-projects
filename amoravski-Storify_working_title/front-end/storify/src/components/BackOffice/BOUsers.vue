@@ -46,7 +46,7 @@
           </tr>
         </thead>
         <tbody>
-          <BOUser @updated="updateUser" @removed="removeUser"  v-for="user in users" v-bind:key="user.id" v-bind:user=user />
+          <BOUser @updated="updateUser" @removed="removeUser"  v-for="user in users" v-bind:key="user.id" v-bind:user=user v-bind:interfaces=interfaces />
         </tbody>
     </table>
 
@@ -89,6 +89,7 @@ export default {
       usersCount: 0,
       asc: false,
       token: '',
+      interfaces: [],
     };
   },
 
@@ -98,6 +99,7 @@ export default {
       this.token = jwt;
     }
     this.getUsers();
+    this.getInterfaces();
   },
 
   methods: {
@@ -145,6 +147,7 @@ export default {
     updateUser: function(event) {
       var url = `http://localhost:3000/account`
       console.log(event);
+      event.token = this.token;
       axios({ method:"PUT", "url": url, data: event}).then(() => {
           alert("Updated user");
           this.getUsers();
@@ -156,8 +159,8 @@ export default {
     },
 
     removeUser: function (event) {
-      var url = `http://localhost:3000/account?id=${event}`
-      axios({ method:"DELETE", "url": url}).then(() => { this.getUsers();
+      var url = `http://localhost:3000/account?id=${event}&token=${this.token}`;
+      axios({ method:"DELETE", "url": url}).then(() => { this.getUsers(); alert("Removed User");
         }
       , error => {
             alert(error.response.data.message);
@@ -175,6 +178,22 @@ export default {
         this.page--;
         this.getUsers();
       }
+    },
+
+    getInterfaces: function () {
+      const backendurl = `http://localhost:3000/`;
+      let url = backendurl + `roles/interfaces?token=${this.token}`;
+      axios({ method:"GET", "url": url})
+        .then(
+          result => {
+            let parsed = JSON.parse(JSON.stringify(result.data));
+            this.interfaces = parsed.interfaces; 
+          },
+          error => {
+            console.log(error);
+            alert(error.response.data.message);
+          }
+        );
     },
   }
 }

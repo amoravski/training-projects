@@ -7,13 +7,13 @@
       <td v-if="!updateFormActive">{{ new Date(user.created_at).toLocaleString() }}</td>
 
       <!-- Buttons -->
-      <td v-if="!updateFormActive" >
+      <td v-if="!updateFormActive && interfaces.includes('users_d')" >
         <button style="background-color: red" v-on:click="removed" >
           Remove
         </button>
       </td>
 
-      <td>
+      <td v-if="interfaces.includes('users_u')">
         <button style="background-color: green" v-on:click="toggleUpdateForm" >
           {{updateFormActive ? "Close Form" : "Edit"}}
         </button>
@@ -28,7 +28,7 @@
 import BOUpdateUserForm from './BOUpdateUserForm.vue';
 export default {
   name: 'BOUser',
-  props: [ 'user' ],
+  props: [ 'user', 'interfaces' ],
 
   components: { BOUpdateUserForm },
 

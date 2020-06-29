@@ -3,10 +3,10 @@
     <div>
       {{ permission.name }}
       {{ permission.status ? "Active" : "Inactive" }}
-    <button v-if="!permission.status" style="background-color: green" v-on:click="added" >
+    <button v-if="!permission.status && interfaces.includes('roles_u')" style="background-color: green" v-on:click="added" >
       Add
     </button>
-    <button v-if="permission.status" style="background-color: red" v-on:click="revoked" >
+    <button v-if="permission.status && interfaces.includes('roles_u')" style="background-color: red" v-on:click="revoked" >
       Revoke
     </button>
     </div>
@@ -16,7 +16,7 @@
 <script>
 export default {
   name: 'BOPermission',
-  props: [ 'permission' ],
+  props: [ 'permission', 'interfaces'],
 
   methods: {
 

@@ -30,10 +30,10 @@
     </div>
 
     <button v-on:click="search">Search</button>
-    <button v-if="!newForm" v-on:click="newFormButton">New Product</button>
-    <button v-if="newForm" v-on:click="newFormButton">Close Form</button>
+    <button v-if="!newForm && interfaces.includes('products_c')" v-on:click="newFormButton">New Product</button>
+    <button v-if="newForm && interfaces.includes('products_c')" v-on:click="newFormButton">Close Form</button>
 
-    <BONewProductForm v-if="newForm" @created="createProduct" />
+    <BONewProductForm v-if="newForm && interfaces.includes('products_c')" @created="createProduct" />
 
     <table>
         <thead>
@@ -48,7 +48,7 @@
           </tr>
         </thead>
         <tbody>
-          <BOProduct @updated="updateProduct" @removed="removeProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product v-bind:roles=roles />
+          <BOProduct @updated="updateProduct" @removed="removeProduct" v-for="product in products" v-bind:key="product.id" v-bind:product=product v-bind:interfaces=interfaces />
         </tbody>
     </table>
 
@@ -93,15 +93,19 @@ export default {
       count:0,
       returnCount: true,
       roles: [],
+      token: '',
+      interfaces: [],
     }
   },
 
   mounted () {
     if(typeof localStorage.getItem('JWT_admin_account_storify') != undefined && localStorage.getItem('JWT_admin_account_storify') != null) {
       let jwt = localStorage.getItem('JWT_admin_account_storify');
+      this.token = jwt;
       this.roles = jwt_decode(jwt).roles;
     }
     this.getProducts();
+    this.getInterfaces();
   },
 
   methods: {
@@ -176,8 +180,8 @@ export default {
     },
 
     removeProduct: function (event) {
-      var url = `http://localhost:3000/product?id=${event}`
-      axios({ method:"DELETE", "url": url}).then(() => { this.getProducts();
+      var url = `http://localhost:3000/product?id=${event}&token=${this.token}`
+      axios({ method:"DELETE", "url": url}).then(() => { alert('Deleted Product'); this.getProducts();
         }
       , error => {
         console.log(error);
@@ -188,7 +192,8 @@ export default {
     createProduct: function(event) {
       this.newForm = false;
       var url = `http://localhost:3000/product`
-      axios({ method:"POST", "url": url, data: event}).then(() => { this.getProducts();
+      event.append("token", this.token);
+      axios({ method:"POST", "url": url, data: event}).then(() => { alert('Created Product'); this.getProducts();
         }
       , error => {
         console.log(error);
@@ -200,7 +205,8 @@ export default {
     },
     updateProduct: function(event) {
       var url = `http://localhost:3000/product`
-      axios({ method:"PUT", "url": url, data: event}).then(() => { this.getProducts();
+      event.append("token", this.token);
+      axios({ method:"PUT", "url": url, data: event}).then(() => { alert('Updated Product'); this.getProducts();
         }
       , error => {
         console.log(error);
@@ -216,7 +222,22 @@ export default {
         this.page--;
         this.getProducts();
       }
-    }
+    },
+    getInterfaces: function () {
+      const backendurl = `http://localhost:3000/`;
+      let url = backendurl + `roles/interfaces?token=${this.token}`;
+      axios({ method:"GET", "url": url})
+        .then(
+          result => {
+            let parsed = JSON.parse(JSON.stringify(result.data));
+            this.interfaces = parsed.interfaces; 
+          },
+          error => {
+            console.log(error);
+            alert(error.response.data.message);
+          }
+        );
+    },
   }
 }
 

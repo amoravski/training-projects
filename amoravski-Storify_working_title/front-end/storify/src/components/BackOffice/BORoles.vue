@@ -12,7 +12,7 @@
         </tr>
       </thead>
       <tbody>
-        <BORole v-for="role in roles" v-bind:key="role.id" v-bind:role=role v-bind:token=token />
+        <BORole @removed="removeRole" v-for="role in roles" v-bind:key="role.id" v-bind:role=role v-bind:token=token v-bind:interfaces=interfaces />
       </tbody>
     </table>
 
@@ -37,6 +37,7 @@ export default {
       roles : [], 
     token: '',
     empty: false,
+    interfaces: [],
     };
   },
 
@@ -46,13 +47,14 @@ export default {
       this.token = jwt;
     }
     this.getRoles();
+    this.getInterfaces();
   },
 
   methods: {
     getRoles: function () {
       // Build url
-      const backendurl = 'http://localhost:3000/';
-      let url = backendurl + `roles`;
+      const backendurl = `http://localhost:3000/`;
+      let url = backendurl + `roles?token=${this.token}`;
 
       // Make request
       axios({ method:"GET", "url": url})
@@ -75,7 +77,7 @@ export default {
     },
 
     removeRole: function (event) {
-      var url = `http://localhost:3000/roles?id=${event}`
+      var url = `http://localhost:3000/roles?roleId=${event}&token=${this.token}`
       axios({ method:"DELETE", "url": url}).then(() => { 
           alert("Removed Role");
           this.getRoles();
@@ -84,6 +86,22 @@ export default {
         console.log(error);
             alert(error.response.data.message);
       });
+    },
+
+    getInterfaces: function () {
+      const backendurl = `http://localhost:3000/`;
+      let url = backendurl + `roles/interfaces?token=${this.token}`;
+      axios({ method:"GET", "url": url})
+        .then(
+          result => {
+            let parsed = JSON.parse(JSON.stringify(result.data));
+            this.interfaces = parsed.interfaces; 
+          },
+          error => {
+            console.log(error);
+            alert(error.response.data.message);
+          }
+        );
     },
   }
 }
