@@ -62,6 +62,7 @@ export default {
     addPermission: function (event) {
       var url = `http://localhost:3000/permissions`;
       axios({ method:"PUT", "url": url, data: { roleId: this.role.id, permissionId: event, token: this.token}}).then(() => { 
+          alert("Added permission");
           this.getPermissions();
         }
       , error => {
@@ -73,6 +74,7 @@ export default {
     revokePermission: function (event) {
       var url = `http://localhost:3000/permissions?permissionId=${event}&roleId=${this.role.id}&token=${this.token}`
       axios({ method:"DELETE", "url": url}).then(() => { 
+          alert("Revoked permission");
           this.getPermissions();
         }
       , error => {

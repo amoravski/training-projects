@@ -13,6 +13,7 @@ import BOHeader from './components/BackOffice/BOHeader';
 import BOProducts from './components/BackOffice/BOProducts.vue';
 import BOOrders from './components/BackOffice/BOOrders.vue';
 import BOUsers from './components/BackOffice/BOUsers.vue';
+import BORoles from './components/BackOffice/BORoles.vue';
 import BOLogin from './components/BackOffice/BOLogin.vue';
 import BORegister from './components/BackOffice/BORegister.vue';
 
@@ -33,6 +34,7 @@ const routes = [
     { path: '/boproducts', name: 'BOProducts', component: BOProducts },
     { path: '/boorders', name: 'BOOrders', component: BOOrders },
     { path: '/bousers', name: 'BOUsers', component: BOUsers },
+    { path: '/boroles', name: 'BORoles', component: BORoles },
     { path: '/bologin', name: 'BOLogin', component: BOLogin },
     { path: '/boregister', name: 'BORegister', component: BORegister },
 ];

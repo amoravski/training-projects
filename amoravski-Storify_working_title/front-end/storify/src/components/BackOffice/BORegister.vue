@@ -8,8 +8,13 @@
       <label for="email">Email:</label>
       <input v-model="form.email" name="email" type="email">
 
-      <label for="roles">Roles:</label>
-      <input v-model="form.roles" name="roles" type="text">
+      <div>
+        <label for="roles"><b>Roles: </b></label>
+        <select style="width: 30rem;" id="statusFilter" v-model="form.roles">
+          <option v-for="role in roles" v-bind:value="role.name" v-bind:key="role.id">{{role.name}}</option>
+          <option value=""></option>
+        </select >
+      </div>
 
       <label for="password">Password:</label>
       <input v-model="form.password" name="password" type="password">
@@ -48,13 +53,15 @@ export default {
         password: '',
         confirmPassword: '',
       },
+      roles: [],
     }
   },
 
   mounted () {
-      let recaptchaScript = document.createElement('script')
-      recaptchaScript.setAttribute('src', 'https://www.google.com/recaptcha/api.js?onload=vueRecaptchaApiLoaded&render=explicits')
-      document.head.appendChild(recaptchaScript)
+      let recaptchaScript = document.createElement('script');
+      recaptchaScript.setAttribute('src', 'https://www.google.com/recaptcha/api.js?onload=vueRecaptchaApiLoaded&render=explicits');
+      document.head.appendChild(recaptchaScript);
+    this.getRoles();
   },
 
   methods: {
@@ -71,6 +78,7 @@ export default {
         .then(
           () => {
             alert("Account made");
+            this.$router.push({ name: 'BOLogin'});
           },
           error => {
             const resp = error.response.data.message;
@@ -109,7 +117,23 @@ export default {
 
     submitCaptcha: function () {
       this.$refs.recaptcha.execute();
-    }
+    }, 
+
+    getRoles: function () {
+      const backendurl = 'http://localhost:3000/';
+      const url = backendurl + 'roles';
+      axios({ method:"GET", "url": url})
+        .then(
+          result => {
+            let parsed = JSON.parse(JSON.stringify(result.data));
+            this.roles = parsed.roles; 
+          },
+          error => {
+            console.log(error);
+            alert(error.response.data.message);
+          }
+        );
+    },
 
   }
 };

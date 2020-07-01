@@ -7,7 +7,7 @@ const rolesRouter = router({
 });
 
 rolesRouter.get('/', getRoles);
-rolesRouter.put('/', addRole);
+rolesRouter.post('/', addRole);
 rolesRouter.delete('/', removeRole);
 
 rolesRouter.get('/user', getRolesUser);
@@ -19,6 +19,7 @@ rolesRouter.get('/interfaces', allowedInterfacesUser);
 async function getRoles(ctx) {
     ctx.set("Access-Control-Allow-Origin", "*");
     try {
+        /*
         const filter = ctx.request.query ? ctx.request.query : {};
         if(!filter.token) {
             throw { message: "Unauthorized"};
@@ -29,6 +30,7 @@ async function getRoles(ctx) {
         if(permissions.status != 'ok') { 
             throw { message: "Unauthorized"};
         }
+        */
     } catch(err) {
         ctx.response.status = 400;
         ctx.response.body = {status: 'userError', error: err.message};
@@ -49,7 +51,8 @@ async function getRoles(ctx) {
 
 async function addRole(ctx) {
     try {
-        params = ctx.request.body;
+        var params = ctx.request.body;
+        console.log(params);
         if(!params.token) {
             throw { message: "Unauthorized"};
         }
@@ -59,13 +62,13 @@ async function addRole(ctx) {
         if(permissions.status != 'ok') { 
             throw { message: "Unauthorized"};
         }
-        roleName = params.roleName;
+        var roleName = params.roleName;
         if(!(roleName)) {
-            throw 'Missing params';
+            throw { message: 'Missing params'};
         }
     } catch (err) {
         ctx.response.status = 400;
-        ctx.body = {status:"userError", message: "Missing params"};
+        ctx.body = {status:"userError", message: err.message};
         return;
     }
 

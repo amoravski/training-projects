@@ -2,6 +2,9 @@
   <div id="roles">
     <Header />
     <h2>Roles</h2>
+    <button v-if="!newForm && interfaces.includes('roles_c')" v-on:click="newFormButton">New Role</button>
+    <button v-if="newForm && interfaces.includes('roles_c')" v-on:click="newFormButton">Close Form</button>
+    <BONewRoleForm v-if="newForm && interfaces.includes('roles_c')" @created="createRole" />
 
     <table>
       <thead>
@@ -26,17 +29,19 @@
 import axios from 'axios';
   
 import BORole from './BORole.vue';
+import BONewRoleForm from './BONewRoleForm.vue';
 import Header from './BOHeader.vue';
 
 export default {
   name: 'BORoles',
-  components: { Header, BORole },
+  components: { Header, BORole, BONewRoleForm },
 
   data () {
     return {
-      roles : [], 
+    roles : [], 
     token: '',
     empty: false,
+      newForm: false,
     interfaces: [],
     };
   },
@@ -76,6 +81,10 @@ export default {
         );
     },
 
+    newFormButton: function() {
+      this.newForm = !this.newForm;
+    },
+
     removeRole: function (event) {
       var url = `http://localhost:3000/roles?roleId=${event}&token=${this.token}`
       axios({ method:"DELETE", "url": url}).then(() => { 
@@ -103,6 +112,22 @@ export default {
           }
         );
     },
+
+    createRole: function(event) {
+      const backendurl = `http://localhost:3000/`;
+      let url = backendurl + `roles`;
+      axios({ method:"POST", "url": url, data: {token: this.token, roleName:event}})
+        .then(
+          () => {
+            alert("Made role");
+            this.getRoles();
+          },
+          error => {
+            console.log(error);
+            alert(error.response.data.message);
+          }
+        );
+    }
   }
 }
 </script>

@@ -92,7 +92,7 @@ async function addPermission(ctx) {
         }
     } catch (err) {
         ctx.response.status = 400;
-        ctx.body = {status:"userError", message: "Missing params"};
+        ctx.body = {status:"userError", message: err.message};
         return;
     }
 

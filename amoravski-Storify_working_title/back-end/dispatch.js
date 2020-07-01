@@ -2,6 +2,7 @@
  * Dispatch Orders API
  */
 
+const jwt = require('jsonwebtoken');
 const router = require('koa-router');
 const pg = require('./postgre.js');
 const dispatchRouter = router({
