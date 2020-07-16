@@ -52,6 +52,17 @@ public:
       return ssOut.str();
    }
    
+    std::string on_internal_error() {
+        std::stringstream ssOut;
+        std::string sHTML = "<html><body><h1>500 Internal Error</h1><p>Something went wrong on the server</p></body></html>";
+        ssOut << "HTTP/1.1 500 Internal Error" << std::endl;
+        ssOut << "content-type: text/html" << std::endl;
+        ssOut << "content-length: " << sHTML.length() << std::endl;
+        ssOut << std::endl;
+        ssOut << sHTML;
+        return ssOut.str();
+   }
+   
    int content_length()
    {
       auto request = headers.find("content-length");
@@ -164,6 +175,15 @@ class session
          pThis->read_next_line(pThis);
       });
    }
+
+   static void send_internal_error(std::shared_ptr<session> pThis)
+   {
+               std::shared_ptr<std::string> str = std::make_shared<std::string>(pThis->headers.on_internal_error());
+               asio::async_write(pThis->socket, boost::asio::buffer(str->c_str(), str->length()), [pThis, str](const error_code& e, std::size_t s)
+               {
+                  std::cout << "done" << std::endl;
+               });
+   }
    
 public:
 
@@ -174,9 +194,11 @@ public:
    {
    }
    
-   static void interact(std::shared_ptr<session> pThis)
+   static void interact(std::shared_ptr<session> pThis) try
    {
-      read_first_line(pThis);
+            read_first_line(pThis);
+   } catch (const std::exception& e) {
+            send_internal_error(pThis);
    }
 };
 
