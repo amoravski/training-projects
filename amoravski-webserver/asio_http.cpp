@@ -1,4 +1,6 @@
 #include <iostream>
+#include <fstream>
+#include <experimental/filesystem>
 #include <boost/asio.hpp>
 #include <boost/algorithm/string.hpp>
 #include <string>
@@ -7,6 +9,7 @@
 using namespace boost;
 using namespace boost::system;
 using namespace boost::asio;
+namespace fs = std::experimental::filesystem;
 
 class session;
 
@@ -25,41 +28,114 @@ public:
    std::string get_response()
    {
       std::stringstream ssOut;
-      if(url == "/")
+      std::cout << url <<std::endl;
+      try {
+      if(url == "/" || url == "/index.html" )
       {
          ssOut << "HTTP/1.1 200 OK" << std::endl;
          ssOut << "content-type: text/html" << std::endl;
 
-         std::string sHTML = "<html><body><h1>Hello there!</h1><p>Testing /</p>";
-         for(auto it = params.begin(); it!=params.end(); it++){
-            sHTML += "<p>Arg: " + it->first + " Value: " + it->second +"</p>";
-         }
-         sHTML += "</body></html>";
-         ssOut << "content-length: " << sHTML.length() << std::endl;
+         std::string line;
+         std::ifstream html_file ("index.html");
+         fs::path p = fs::current_path() / "index.html";
+         ssOut << "content-length: " << fs::file_size(p) << std::endl;
          ssOut << std::endl;
-         ssOut << sHTML;
+
+         if(html_file.is_open()) 
+         {
+             while(getline(html_file,line))
+             {
+                 ssOut << line << '\n';
+             }
+             html_file.close();
+         }
       }
 
+      else if(url!= "" && fs::exists(url.substr(1, std::string::npos)))
+      {
+         ssOut << "HTTP/1.1 200 OK" << std::endl;
+         ssOut << "content-type: text/html" << std::endl;
+
+         std::string line;
+         std::ifstream html_file (url.substr(1, std::string::npos));
+         fs::path p = fs::current_path() / url.substr(1, std::string::npos);
+         ssOut << "content-length: " << fs::file_size(p) << std::endl;
+         ssOut << std::endl;
+
+         if(html_file.is_open()) 
+         {
+             while(getline(html_file,line))
+             {
+                 ssOut << line << '\n';
+             }
+             html_file.close();
+         }
+      }
+
+      /*
+      else if(Is file?) {
+         ssOut << "HTTP/1.1 200 OK" << std::endl;
+         ssOut << "content-type: text/html" << std::endl;
+
+         std::string line;
+         std::ifstream html_file (url.substr(1, std::string::npos));
+         fs::path p = fs::current_path() / url.substr(1, std::string::npos);
+         ssOut << "content-length: " << fs::file_size(p) << std::endl;
+         ssOut << std::endl;
+
+         if(html_file.is_open()) 
+         {
+             while(getline(html_file,line))
+             {
+                 ssOut << line << '\n';
+             }
+             html_file.close();
+         }
+      }
+        */
       else
       {
+         std::string line;
+         std::ifstream html_file ("404.html");
+         fs::path p = fs::current_path() / "404.html";
          std::string sHTML = "<html><body><h1>404 Not Found</h1><p>There's nothing here.</p></body></html>";
          ssOut << "HTTP/1.1 404 Not Found" << std::endl;
          ssOut << "content-type: text/html" << std::endl;
-         ssOut << "content-length: " << sHTML.length() << std::endl;
+         ssOut << "content-length: " << fs::file_size(p) << std::endl;
          ssOut << std::endl;
-         ssOut << sHTML;
+        if(html_file.is_open()) 
+         {
+             while(getline(html_file,line))
+             {
+                 ssOut << line << '\n';
+             }
+             html_file.close();
+         }
       }
       return ssOut.str();
+      }
+      catch (...) {
+         return on_internal_error();
+      }
    }
    
     std::string on_internal_error() {
+         std::string line;
+         std::ifstream html_file ("500.html");
+         fs::path p = fs::current_path() / "500.html";
         std::stringstream ssOut;
-        std::string sHTML = "<html><body><h1>500 Internal Error</h1><p>Something went wrong on the server</p></body></html>";
         ssOut << "HTTP/1.1 500 Internal Error" << std::endl;
         ssOut << "content-type: text/html" << std::endl;
-        ssOut << "content-length: " << sHTML.length() << std::endl;
+         ssOut << "content-length: " << fs::file_size(p) << std::endl;
         ssOut << std::endl;
-        ssOut << sHTML;
+        if(html_file.is_open()) 
+         {
+             while(getline(html_file,line))
+             {
+                 ssOut << line << '\n';
+             }
+             html_file.close();
+         }
         return ssOut.str();
    }
    
@@ -99,16 +175,21 @@ public:
 
       std::cout << "method: " << method << " ";
       std::cout << "url: " << url << " ";
-      std::vector<std::string> temp;
-      boost::split(temp,url,boost::is_any_of("?&="));
-      url=temp[0];
-      temp.erase(temp.begin());
       std::cout << "version: " << version << std::endl;
-      for(auto it = temp.begin(); it!=temp.end(); it+=2) {
-          params.insert(std::pair<std::string,std::string>(*it, *(it+1)));
+      std::vector<std::string> temp;
+      try {
+          boost::split(temp,url,boost::is_any_of("?&="));
+          url=temp[0];
+          temp.erase(temp.begin());
+          for(auto it = temp.begin(); it!=temp.end(); it+=2) {
+              params.insert(std::pair<std::string,std::string>(*it, *(it+1)));
+          }
+          for (std::map<std::string, std::string>::const_iterator it = params.begin(); it != params.end(); ++it) {
+              std::cout << it->first << " " << it->second << " ";
+          }
       }
-      for (std::map<std::string, std::string>::const_iterator it = params.begin(); it != params.end(); ++it) {
-          std::cout << it->first << " " << it->second << " ";
+      catch (...){
+            std::cout << "Incorrectly formatted params, disregarding..." << std::endl;
       }
 
       std::cout << "request for resource: " << url << std::endl;
