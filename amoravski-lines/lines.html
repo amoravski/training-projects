@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+      <head>    
+        <meta http-equiv=Content-Type content="text/html; charset=UTF-8">
+      </head>
+    <body>
+        <p>
+        <label for="N">N:</label>
+        <input type="number" id="N" value=1/>
+        </p>
+        <p>
+        <label for="A">A:</label>
+        <input type="number" id="A" value=1/>
+        </p>
+        <p>
+        <label for="B">B:</label>
+        <input type="number" id="B" value=1 min=1/>
+        </p>
+        <p>
+        <label for="C">C:</label>
+        <input type="number" id="C" value=1 min=1/>
+        </p>
+        <p>
+        <button onclick="draw()">Draw!</button>
+        </p>
+        <canvas id="myCanvas" width="500" height="200" style="border:1px solid #000000;">
+        </canvas>
+    </body>
+    <script>
+        function draw() {
+            var canvas = document.getElementById("myCanvas");
+            var n = parseInt(document.getElementById("N").value) + 1;
+            var a = parseInt(document.getElementById("A").value);
+            var b = parseInt(document.getElementById("B").value);
+            var c = parseInt(document.getElementById("C").value);
+            var ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, 500, 200); 
+            var linea = [];
+            var lineb = [];
+            var line_to_color = [];
+            for(let i=0; i<n; i++) {
+                linea.push(0);
+                lineb.push(0);
+                line_to_color.push(0);
+            }
+            for(let i=0; i<n; i++) {
+                if(i%a ==0) {
+                    linea[i]=1
+                }
+                if((n-i-1)%b ==0) {
+                    lineb[i]=2
+                }
+            }
+            for(let i=0; i<n; i++) {
+                if(linea[i]!=0) {
+                    if(i - c >= 0) {
+                        if(lineb[i-c]!=0) {
+                            for(let j=i-c; j<=i; j++)
+                            {
+                                line_to_color[j]=1
+                            }
+                        }
+                    }
+                    if(i + c <= n-1) {
+                        if(lineb[i+c]!=0) {
+                            for(let j=i; j<=i+c; j++)
+                            {
+                                line_to_color[j]=1
+                            }
+                        }
+                    }
+                }
+            }
+            console.log(segment);
+            for(let i=0; i<n-1; i++) {
+                if(line_to_color[i] == 1 && line_to_color[i+1] == 1) {
+                    ctx.lineWidth='30';
+                    ctx.strokeStyle='red';
+                }
+                else
+                {
+                    ctx.lineWidth='4';
+                    ctx.strokeStyle='black';
+                }
+                ctx.beginPath();
+                ctx.moveTo((i*500)/(n-1), 100);
+                ctx.lineTo(((i+1)*500)/(n-1), 100);
+                ctx.stroke();
+
+            }
+        }
+        
+    </script>
+</html>
