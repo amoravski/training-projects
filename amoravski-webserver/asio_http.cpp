@@ -71,6 +71,11 @@ public:
                 }
             }
 
+            else if(url!="" && fs::exists(url.substr(1, std::string::npos)) && headers.find("Accept")->second.compare(std::string{"image/webp"}) && format == "cgi") {
+                ssOut << "HTTP/1.1 200 OK" << std::endl;
+                ssOut << "content-type: text/html" << std::endl;
+            }
+
             else if(url!= "" && fs::exists(url.substr(1, std::string::npos)))
             {
                 ssOut << "HTTP/1.1 200 OK" << std::endl;
@@ -141,7 +146,7 @@ public:
 
     int content_length()
     {
-        auto request = headers.find("content-length");
+        auto request = headers.find("Content-Length");
         if(request != headers.end())
         {
             std::stringstream ssLength(request->second);
@@ -201,6 +206,7 @@ class session
     asio::streambuf buff;
     http_headers headers;
 
+    // Body
     static void read_body(std::shared_ptr<session> pThis)
     {
         int nbuffer = 1000;
@@ -211,6 +217,7 @@ class session
         });
     }
 
+    // Headers
     static void read_next_line(std::shared_ptr<session> pThis)
     {
         asio::async_read_until(pThis->socket, pThis->buff, '\r', [pThis](const error_code& e, std::size_t s)
@@ -234,6 +241,7 @@ class session
                 }
                 else
                 {
+                    std::cout << "done123" << std::endl;
                     pThis->read_body(pThis);
                 }
             }
@@ -244,6 +252,7 @@ class session
         });
     }
 
+    // Request line
     static void read_first_line(std::shared_ptr<session> pThis)
     {
         asio::async_read_until(pThis->socket, pThis->buff, '\r', [pThis](const error_code& e, std::size_t s)
@@ -285,13 +294,17 @@ public:
 
 void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service)
 {
+    // Make new session instance 
     std::shared_ptr<session> sesh = std::make_shared<session>(io_service);
+    // Start listening
     acceptor.async_accept(sesh->socket, [sesh, &acceptor, &io_service](const error_code& accept_error)
     {
+        // Continue listening after accepting
         accept_and_run(acceptor, io_service);
+
         if(!accept_error)
         {
-        session::interact(sesh);
+            session::interact(sesh);
         }
     });
 }
