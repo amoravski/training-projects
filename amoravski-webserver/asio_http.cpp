@@ -2,6 +2,7 @@
 #include <fstream>
 #include <experimental/filesystem>
 #include <boost/asio.hpp>
+#include <boost/process.hpp>
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <memory>
@@ -10,6 +11,7 @@ using namespace boost;
 using namespace boost::system;
 using namespace boost::asio;
 namespace fs = std::experimental::filesystem;
+namespace bp = boost::process;
 
 class session;
 
@@ -71,9 +73,29 @@ public:
                 }
             }
 
-            else if(url!="" && fs::exists(url.substr(1, std::string::npos)) && headers.find("Accept")->second.compare(std::string{"image/webp"}) && format == "cgi") {
+            else if(url!="" && fs::exists(url.substr(1, std::string::npos)) && format == "cgi") {
                 ssOut << "HTTP/1.1 200 OK" << std::endl;
-                ssOut << "content-type: text/html" << std::endl;
+                bp::ipstream is;
+                auto env = boost::this_process::environment();
+                for(auto i = params.begin(); i!=params.end(); i++)
+                {
+                    env[i->first] = i->second;
+                }
+                bp::environment env_ = env;
+                bp::child c("." + url, env_, bp::std_out > is);
+                std::vector<std::string> data;
+                std::string line;
+                while (c.running() && std::getline(is, line))
+                {
+                    if (is.good() != EOF) {
+                        line += '\n';
+                    }
+                    data.push_back(line);
+                }
+                c.wait();
+                for(auto i=data.begin(); i!=data.end(); i++) {
+                    ssOut << *i;
+                }
             }
 
             else if(url!= "" && fs::exists(url.substr(1, std::string::npos)))

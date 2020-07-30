@@ -1,0 +1,22 @@
+<html>
+    <body>
+        <h1>Two number sum</h1>
+        <label for="X">X:</label>
+        <input id="X" />
+        <br>
+        <label for="Y">Y:</label>
+        <input id="Y" />
+        <br>
+        <button onclick="clicked()">Find result</button>
+        <br>
+        <label for="sum">Result:</label>
+        <object type="text/plain" width="1000" height="20" data="" id="sum"></object>
+    </body>
+    <script>
+        function clicked () {
+            var x = document.getElementById("X").value;
+            var y = document.getElementById("Y").value;
+            document.getElementById("sum").data = `bash.cgi?first=${x}&second=${y}`;
+        }
+    </script>
+</html>
