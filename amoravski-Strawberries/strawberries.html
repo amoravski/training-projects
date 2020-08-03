@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+      <head>    
+        <meta http-equiv=Content-Type content="text/html; charset=UTF-8">
+      </head>
+    <body>
+        <p>
+        <label for="K">K:</label>
+        <input type="number" id="K" value=1/>
+        </p>
+        <p>
+        <label for="L">L:</label>
+        <input type="number" id="L" value=1 min=1/>
+        </p>
+        <p>
+        <label for="R">R:</label>
+        <input type="number" id="R" value=1 min=1/>
+        </p>
+        <p>
+        <button onclick="draw()">Draw!</button>
+        </p>
+        <canvas id="myCanvas" width="400" height="400" style="border:1px solid #000000;">
+        </canvas>
+    </body>
+    <script>
+        function draw() {
+            var canvas = document.getElementById("myCanvas");
+            var k = parseInt(document.getElementById("K").value);
+            var l = parseInt(document.getElementById("L").value);
+            var r = parseInt(document.getElementById("R").value);
+            var ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, 400, 400); 
+            var infected = [];
+            for(let i=0; i<k; i++) {
+                let row = [];
+                for(let j=0; j<l; j++) {
+                    row.push(0);
+                }
+                infected.push(row);
+            }
+            sb = [[0, 0]]
+            propagate_infected(infected, k, l, r, sb);
+            console.log(infected);
+        }
+        function propagate_infected(infected, K, L, R, sb) {
+            let new_infected = new Set();
+            for(let s of sb) {
+                let s0 = s[0];
+                let s1 = s[1];
+                infected[s0][s1] = 1;
+                neigh = get_neigh(K,L, infected, s)
+                for(let ne of neigh) {
+                    new_infected.add(ne);
+                }
+            }
+            if(R!=0) {
+                propagate_infected(infected, K, L, R-1, new_infected)
+            }
+            else {
+                return infected;
+            }
+        }
+        function get_neigh(K, L, infected, s) {
+            let output = [];
+            let s0 = s[0];
+            let s1 = s[1];
+            if(s0+1 < K && infected[s0+1][s1]!=1) {
+                output.push([s0+1, s1]);
+            }
+            if(s0-1 >= 0 && infected[s0-1][s1]!=1) {
+                output.push([s0-1, s1]);
+            }
+            if(s1+1 < L && infected[s0][s1+1]!=1) {
+                output.push([s0, s1+1]);
+            }
+            if(s1+1 >= 0 && infected[s0][s1-1]!=1) {
+                output.push([s0, s1-1]);
+            }
+            return output;
+        }
+        
+    </script>
+</html>
