@@ -17,19 +17,38 @@
         <input type="number" id="R" value=1 min=1/>
         </p>
         <p>
+        <label for="X">X:</label>
+        <input type="number" id="X" value=1 min=1/>
+        </p>
+        <p>
+        <label for="Y">Y:</label>
+        <input type="number" id="Y" value=1 min=1/>
+        </p>
+        <p>
+        <label for="X1">X2:</label>
+        <input type="number" id="X1" value=1 min=1/>
+        </p>
+        <p>
+        <label for="Y1">Y2:</label>
+        <input type="number" id="Y1" value=1 min=1/>
+        </p>
+        <p>
         <button onclick="draw()">Draw!</button>
         </p>
-        <canvas id="myCanvas" width="400" height="400" style="border:1px solid #000000;">
-        </canvas>
+        <table>
+        </table>
     </body>
     <script>
         function draw() {
-            var canvas = document.getElementById("myCanvas");
             var k = parseInt(document.getElementById("K").value);
             var l = parseInt(document.getElementById("L").value);
             var r = parseInt(document.getElementById("R").value);
-            var ctx = canvas.getContext("2d");
-            ctx.clearRect(0, 0, 400, 400); 
+            var x = Number(parseInt(document.getElementById("X").value));
+            var y = Number(parseInt(document.getElementById("Y").value));
+            var x1 = Number(parseInt(document.getElementById("X1").value));
+            var y1 = Number(parseInt(document.getElementById("Y1").value));
+            var table = document.querySelector("table");
+            table.innerHTML = '';
             var infected = [];
             for(let i=0; i<k; i++) {
                 let row = [];
@@ -38,23 +57,24 @@
                 }
                 infected.push(row);
             }
-            sb = [[0, 0]]
-            propagate_infected(infected, k, l, r, sb);
+            sb = [[x, y], [x1,y1]]
+            propagate_infected(infected, k, l, r, sb, r);
+            generateTable(table, infected);
             console.log(infected);
         }
-        function propagate_infected(infected, K, L, R, sb) {
+        function propagate_infected(infected, K, L, R, sb, Ror) {
             let new_infected = new Set();
             for(let s of sb) {
                 let s0 = s[0];
                 let s1 = s[1];
-                infected[s0][s1] = 1;
+                infected[s0][s1] = Ror - R + 1;
                 neigh = get_neigh(K,L, infected, s)
                 for(let ne of neigh) {
                     new_infected.add(ne);
                 }
             }
             if(R!=0) {
-                propagate_infected(infected, K, L, R-1, new_infected)
+                propagate_infected(infected, K, L, R-1, new_infected, Ror)
             }
             else {
                 return infected;
@@ -64,20 +84,29 @@
             let output = [];
             let s0 = s[0];
             let s1 = s[1];
-            if(s0+1 < K && infected[s0+1][s1]!=1) {
+            if(s0+1 < K && infected[s0+1][s1]==0) {
                 output.push([s0+1, s1]);
             }
-            if(s0-1 >= 0 && infected[s0-1][s1]!=1) {
+            if(s0-1 >= 0 && infected[s0-1][s1]==0) {
                 output.push([s0-1, s1]);
             }
-            if(s1+1 < L && infected[s0][s1+1]!=1) {
+            if(s1+1 < L && infected[s0][s1+1]==0) {
                 output.push([s0, s1+1]);
             }
-            if(s1+1 >= 0 && infected[s0][s1-1]!=1) {
+            if(s1-1 >= 0 && infected[s0][s1-1]==0) {
                 output.push([s0, s1-1]);
             }
             return output;
         }
-        
+    function generateTable(table, data) {
+        for (let element of data) {
+        let row = table.insertRow();
+            for (key in element) {
+                let cell = row.insertCell();
+                let text = document.createTextNode(element[key]);
+                cell.appendChild(text);
+            }
+        }
+    }
     </script>
 </html>
