@@ -6,6 +6,7 @@
 #include <boost/algorithm/string.hpp>
 #include <string>
 #include <memory>
+#include <thread>
 
 using namespace boost;
 using namespace boost::system;
@@ -35,7 +36,9 @@ public:
             if(url == "/" || url == "/index.html" )
             {
                 ssOut << "HTTP/1.1 200 OK" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
                 ssOut << "content-type: text/html; charset=utf-8" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
 
                 std::string line;
                 std::ifstream html_file ("index.html");
@@ -55,6 +58,7 @@ public:
 
             else if(url!= "" && fs::exists(url.substr(1, std::string::npos)) && headers.find("Accept")->second.compare(std::string{"image/webp"}) && (format == "ico" || format == "png" || format == "jpg")) {
                 ssOut << "HTTP/1.1 200 OK" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
                 ssOut << "content-type: image/webp" << std::endl;
 
                 std::string line;
@@ -75,6 +79,7 @@ public:
 
             else if(url!="" && fs::exists(url.substr(1, std::string::npos)) && format == "cgi") {
                 ssOut << "HTTP/1.1 200 OK" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
                 bp::ipstream is;
                 auto env = boost::this_process::environment();
                 for(auto i = params.begin(); i!=params.end(); i++)
@@ -82,25 +87,17 @@ public:
                     env[i->first] = i->second;
                 }
                 bp::environment env_ = env;
-                bp::child c("." + url, env_, bp::std_out > is);
-                std::vector<std::string> data;
-                std::string line;
-                while (c.running() && std::getline(is, line))
-                {
-                    if (is.good() != EOF) {
-                        line += '\n';
-                    }
-                    data.push_back(line);
-                }
-                c.wait();
-                for(auto i=data.begin(); i!=data.end(); i++) {
-                    ssOut << *i;
-                }
+                io_service ios;
+                std::future<std::string> data;
+                bp::child c("." + url, env_, bp::std_out > data, ios);
+                std::thread thread{[&ios, &ssOut, &data](){ios.run();auto data_value = data.get(); ssOut << data_value;}};
+                thread.join();
             }
 
             else if(url!= "" && fs::exists(url.substr(1, std::string::npos)))
             {
                 ssOut << "HTTP/1.1 200 OK" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
                 ssOut << "content-type: text/html; charset=utf-8" << std::endl;
 
                 std::string line;
@@ -126,6 +123,7 @@ public:
                 fs::path p = fs::current_path() / "404.html";
                 std::string sHTML = "<html><body><h1>404 Not Found</h1><p>There's nothing here.</p></body></html>";
                 ssOut << "HTTP/1.1 404 Not Found" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
                 ssOut << "content-type: text/html" << std::endl;
                 ssOut << "content-length: " << fs::file_size(p) << std::endl;
                 ssOut << std::endl;
@@ -152,6 +150,7 @@ public:
         fs::path p = fs::current_path() / "500.html";
         std::stringstream ssOut;
         ssOut << "HTTP/1.1 500 Internal Error" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
         ssOut << "content-type: text/html" << std::endl;
         ssOut << "content-length: " << fs::file_size(p) << std::endl;
         ssOut << std::endl;
@@ -181,7 +180,7 @@ public:
 
     void on_read_header(std::string line)
     {
-        std::cout << "header: " << line << std::endl;
+        //std::cout << "header: " << line << std::endl;
 
         std::stringstream ssHeader(line);
         std::string headerName;
@@ -200,9 +199,9 @@ public:
         ssRequestLine >> url;
         ssRequestLine >> version;
 
-        std::cout << "method: " << method << " ";
-        std::cout << "url: " << url << " ";
-        std::cout << "version: " << version << std::endl;
+        //std::cout << "method: " << method << " ";
+        //std::cout << "url: " << url << " ";
+        //std::cout << "version: " << version << std::endl;
         std::vector<std::string> temp;
         try {
             boost::split(temp,url,boost::is_any_of("?&="));
@@ -211,15 +210,12 @@ public:
             for(auto it = temp.begin(); it!=temp.end(); it+=2) {
                 params.insert(std::pair<std::string,std::string>(*it, *(it+1)));
             }
-            for (std::map<std::string, std::string>::const_iterator it = params.begin(); it != params.end(); ++it) {
-                std::cout << it->first << " " << it->second << " ";
-            }
         }
         catch (...){
-            std::cout << "Incorrectly formatted params, disregarding..." << std::endl;
+            //std::cout << "Incorrectly formatted params, disregarding..." << std::endl;
         }
 
-        std::cout << "request for resource: " << url << std::endl;
+        //std::cout << "request for resource: " << url << std::endl;
     }
 };
 
@@ -258,12 +254,11 @@ class session
                     std::shared_ptr<std::string> str = std::make_shared<std::string>(pThis->headers.get_response());
                     asio::async_write(pThis->socket, boost::asio::buffer(str->c_str(), str->length()), [pThis, str](const error_code& e, std::size_t s)
                     {
-                        std::cout << "done" << std::endl;
+                        //std::cout << "done" << std::endl;
                     });
                 }
                 else
                 {
-                    std::cout << "done123" << std::endl;
                     pThis->read_body(pThis);
                 }
             }
@@ -293,7 +288,7 @@ class session
         std::shared_ptr<std::string> str = std::make_shared<std::string>(pThis->headers.on_internal_error());
         asio::async_write(pThis->socket, boost::asio::buffer(str->c_str(), str->length()), [pThis, str](const error_code& e, std::size_t s)
         {
-            std::cout << "done" << std::endl;
+            //std::cout << "done" << std::endl;
         });
     }
 
