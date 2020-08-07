@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <experimental/filesystem>
 #include <boost/asio.hpp>
 #include <boost/process.hpp>
@@ -90,8 +91,9 @@ public:
                 io_service ios;
                 std::future<std::string> data;
                 bp::child c("." + url, env_, bp::std_out > data, ios);
-                std::thread thread{[&ios, &ssOut, &data](){ios.run();auto data_value = data.get(); ssOut << data_value;}};
-                thread.join();
+                ios.run();
+                auto data_value = data.get();
+                ssOut << data_value;
             }
 
             else if(url!= "" && fs::exists(url.substr(1, std::string::npos)))
@@ -309,19 +311,28 @@ public:
     }
 };
 
-void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service)
+void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service, std::vector<std::thread>& Pool)
 {
     // Make new session instance 
     std::shared_ptr<session> sesh = std::make_shared<session>(io_service);
     // Start listening
-    acceptor.async_accept(sesh->socket, [sesh, &acceptor, &io_service](const error_code& accept_error)
+    acceptor.async_accept(sesh->socket, [sesh, &acceptor, &io_service, &Pool](const error_code& accept_error)
     {
         // Continue listening after accepting
-        accept_and_run(acceptor, io_service);
+        accept_and_run(acceptor, io_service, Pool);
 
         if(!accept_error)
         {
-            session::interact(sesh);
+            if(Pool.size() == std::thread::hardware_concurrency()){
+                if(Pool.back().joinable()) {
+                    Pool.back().join();
+                }
+                Pool.pop_back();
+            }
+            std::thread thread{[&sesh](){session::interact(sesh);}};
+            Pool.push_back(std::move(thread));
+            //thread.join();
+            //session::interact(sesh);
         }
     });
 }
@@ -329,13 +340,15 @@ void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service)
 int main(int argc, const char * argv[])
 {
     io_service io_service;
+    std::vector<std::thread> Pool;
     // Initialize endpoint on port 8080
     ip::tcp::endpoint endpoint{ip::tcp::v4(), 8080};
     ip::tcp::acceptor acceptor{io_service, endpoint};
 
     acceptor.listen();
-    accept_and_run(acceptor, io_service);
+    accept_and_run(acceptor, io_service, Pool);
 
     io_service.run();
+    for (auto& t : Pool) t.join();
     return 0;
 }
