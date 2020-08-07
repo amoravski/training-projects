@@ -61,8 +61,6 @@
 
             var epsilon = Math.asin(1/r);
             epsilon = 1/(2*r)*Math.sin(epsilon/2);
-            console.log(epsilon);
-            epsilon = 0.000006250045573504649
             for(i=0; i<2*Math.PI; i+=epsilon) {
                 ctx.fillRect(300+x*25+25*r*Math.cos(i),300-y*25 + 25*r*Math.sin(i),2,2);
             }
