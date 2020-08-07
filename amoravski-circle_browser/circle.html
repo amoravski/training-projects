@@ -59,12 +59,11 @@
                     ctx.stroke();
             }
 
-            var epsilon = 0.0005;
+            var epsilon = Math.asin(1/r);
+            var epsilon = 1/(25)*epsilon*Math.sin(epsilon/2);
 
             for(i=0; i<2*Math.PI; i+=epsilon) {
-                ctx.beginPath();
-                ctx.arc(300+x*25+25*r*Math.cos(i), 300-y*25 + 25*r*Math.sin(i), 1, 1, 2 * Math.PI, true);
-                ctx.fill();
+                ctx.fillRect(300+x*25+25*r*Math.cos(i),300-y*25 + 25*r*Math.sin(i),2,2);
             }
         }
     </script>
