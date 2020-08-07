@@ -323,7 +323,10 @@ void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service, std::ve
 
         if(!accept_error)
         {
-            if(Pool.size() == std::thread::hardware_concurrency()){
+            std::cout << "Doggies";
+            //std::cout << Pool.size() << std::endl;
+            //std::cout << std::thread::hardware_concurrency();
+            if(Pool.size() == 1){
                 if(Pool.back().joinable()) {
                     Pool.back().join();
                 }
