@@ -25,6 +25,8 @@ class http_headers
 
     std::map<std::string, std::string> params;
 
+    std::map<std::string, std::string> body_params;
+
     std::map<std::string, std::string> headers;
 
 public:
@@ -78,6 +80,26 @@ public:
                 }
             }
 
+            else if(url!= "" && fs::exists(url.substr(1, std::string::npos)) && format == "iso") {
+                ssOut << "HTTP/1.1 200 OK" << std::endl;
+                ssOut << "server: sasho_webserver/1.2" << std::endl;
+                ssOut << "content-type: application/x-iso9660-image" << std::endl;
+
+                std::string line;
+                std::ifstream html_file (url.substr(1, std::string::npos));
+                fs::path p = fs::current_path() / url.substr(1, std::string::npos);
+                ssOut << std::endl;
+
+                if(html_file.is_open())
+                {
+                    while(getline(html_file,line))
+                    {
+                        ssOut << line << '\n';
+                    }
+                    html_file.close();
+                }
+            }
+
             else if(url!="" && fs::exists(url.substr(1, std::string::npos)) && format == "cgi") {
                 ssOut << "HTTP/1.1 200 OK" << std::endl;
                 ssOut << "server: sasho_webserver/1.2" << std::endl;
@@ -87,6 +109,13 @@ public:
                 {
                     env[i->first] = i->second;
                 }
+                for(auto i = body_params.begin(); i!=body_params.end(); i++)
+                {
+                    env[i->first] = i->second;
+                    std::cout << i->first << std::endl;
+                    std::cout << i->second << std::endl;
+                }
+                
                 bp::environment env_ = env;
                 io_service ios;
                 std::future<std::string> data;
@@ -180,6 +209,20 @@ public:
         return 0;
     }
 
+    std::string content_type()
+    {
+        auto request = headers.find("Content-Type");
+        if(request != headers.end())
+        {
+            std::stringstream ssLength(request->second);
+            std::string content_length;
+            ssLength >> content_length;
+            return content_length;
+        }
+        return "";
+
+    }
+
     void on_read_header(std::string line)
     {
         //std::cout << "header: " << line << std::endl;
@@ -201,9 +244,9 @@ public:
         ssRequestLine >> url;
         ssRequestLine >> version;
 
-        //std::cout << "method: " << method << " ";
-        //std::cout << "url: " << url << " ";
-        //std::cout << "version: " << version << std::endl;
+        std::cout << "method: " << method << " ";
+        std::cout << "url: " << url << " ";
+        std::cout << "version: " << version << std::endl;
         std::vector<std::string> temp;
         try {
             boost::split(temp,url,boost::is_any_of("?&="));
@@ -219,6 +262,59 @@ public:
 
         //std::cout << "request for resource: " << url << std::endl;
     }
+
+    void write_body_unencoded(std::istream &body) {
+        std::string line;
+        std::getline(body, line, '\r');
+        std::vector<std::string> temp;
+        try {
+            boost::split(temp,line,boost::is_any_of("?&="));
+            for(auto it = temp.begin(); it!=temp.end(); it+=2) {
+                body_params.insert(std::pair<std::string,std::string>(*it, *(it+1)));
+            }
+        }
+        catch (...){
+            //std::cout << "Incorrectly formatted params, disregarding..." << std::endl;
+        }
+    }
+
+    void write_body_multipart(std::istream &body) {
+        std::vector<std::string> lines;
+        std::string temp;
+        std::string boundary = "--------------";
+        while( std::getline(body, temp, '\n') ) {
+            lines.push_back(temp);
+        }
+        std::string name="";
+        std::string value="";
+        bool readingHeaders = true;
+        for(auto it = lines.begin()+1; it!=lines.end(); it++) {
+            std::string current = *it;
+            if(current.length() == 1) {
+                readingHeaders = false;
+            }
+            else if(current.find(boundary)!=std::string::npos && readingHeaders == true) {
+                readingHeaders=!readingHeaders;
+                //std::cout << "Doggie inside!";
+                continue;
+            }
+            else if(current.find(boundary)!=std::string::npos && readingHeaders== false) {
+                body_params.insert(std::pair<std::string,std::string>(name, value));
+                name = "";
+                value = "";
+                readingHeaders=!readingHeaders;
+            }
+            else if(readingHeaders == false) {
+                value += current;
+            }
+            else if(readingHeaders == true) {
+                name = current.substr(current.find("\"")+1);
+                name = name.substr(0, name.find("\""));
+            }
+            //std::cout << current << std::endl;
+        }
+        return;
+    }
 };
 
 class session
@@ -229,13 +325,21 @@ class session
     // Body
     static void read_body(std::shared_ptr<session> pThis)
     {
-        int nbuffer = 1000;
-        std::shared_ptr<std::vector<char>> bufptr = std::make_shared<std::vector<char>>(nbuffer);
-        asio::async_read(pThis->socket, boost::asio::buffer(*bufptr, nbuffer), [pThis](const error_code& e, std::size_t s)
-        {
-            //Handle stuff in body somehow
-        });
-    }
+        std::string line, ignore;
+        std::istream stream {&pThis->buff};
+        //std::cout << line;
+        std::string type = pThis->headers.content_type();
+        //std::cout << type;
+        if(type.find("application/x-www-form-urlencoded")!=std::string::npos){
+            pThis->headers.write_body_unencoded(stream);
+        }
+        else if (type.find("multipart/form-data")!=std::string::npos){
+            pThis->headers.write_body_multipart(stream);
+        }
+        else {
+            //pThis->headers.write_body_unencoded(stream);
+        }
+    } 
 
     // Headers
     static void read_next_line(std::shared_ptr<session> pThis)
@@ -256,12 +360,17 @@ class session
                     std::shared_ptr<std::string> str = std::make_shared<std::string>(pThis->headers.get_response());
                     asio::async_write(pThis->socket, boost::asio::buffer(str->c_str(), str->length()), [pThis, str](const error_code& e, std::size_t s)
                     {
-                        //std::cout << "done" << std::endl;
+                        std::cout << "done" << std::endl;
                     });
                 }
                 else
                 {
                     pThis->read_body(pThis);
+                    std::shared_ptr<std::string> str = std::make_shared<std::string>(pThis->headers.get_response());
+                    asio::async_write(pThis->socket, boost::asio::buffer(str->c_str(), str->length()), [pThis, str](const error_code& e, std::size_t s)
+                    {
+                        std::cout << "done" << std::endl;
+                    });
                 }
             }
             else
@@ -323,18 +432,20 @@ void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service, std::ve
 
         if(!accept_error)
         {
-            std::cout << "Doggies";
             //std::cout << Pool.size() << std::endl;
             //std::cout << std::thread::hardware_concurrency();
+            
+            /*
             if(Pool.size() == 1){
                 if(Pool.back().joinable()) {
                     Pool.back().join();
                 }
                 Pool.pop_back();
             }
+            */
             std::thread thread{[&sesh](){session::interact(sesh);}};
-            Pool.push_back(std::move(thread));
-            //thread.join();
+            //Pool.push_back(std::move(thread));
+            thread.join();
             //session::interact(sesh);
         }
     });
