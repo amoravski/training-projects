@@ -112,8 +112,6 @@ public:
                 for(auto i = body_params.begin(); i!=body_params.end(); i++)
                 {
                     env[i->first] = i->second;
-                    std::cout << i->first << std::endl;
-                    std::cout << i->second << std::endl;
                 }
                 
                 bp::environment env_ = env;
@@ -225,8 +223,6 @@ public:
 
     void on_read_header(std::string line)
     {
-        //std::cout << "header: " << line << std::endl;
-
         std::stringstream ssHeader(line);
         std::string headerName;
         std::getline(ssHeader, headerName, ':');
@@ -244,9 +240,9 @@ public:
         ssRequestLine >> url;
         ssRequestLine >> version;
 
-        std::cout << "method: " << method << " ";
-        std::cout << "url: " << url << " ";
-        std::cout << "version: " << version << std::endl;
+        //std::cout << "method: " << method << " ";
+        //std::cout << "url: " << url << " ";
+        //std::cout << "version: " << version << std::endl;
         std::vector<std::string> temp;
         try {
             boost::split(temp,url,boost::is_any_of("?&="));
@@ -295,7 +291,6 @@ public:
             }
             else if(current.find(boundary)!=std::string::npos && readingHeaders == true) {
                 readingHeaders=!readingHeaders;
-                //std::cout << "Doggie inside!";
                 continue;
             }
             else if(current.find(boundary)!=std::string::npos && readingHeaders== false) {
@@ -360,7 +355,8 @@ class session
                     std::shared_ptr<std::string> str = std::make_shared<std::string>(pThis->headers.get_response());
                     asio::async_write(pThis->socket, boost::asio::buffer(str->c_str(), str->length()), [pThis, str](const error_code& e, std::size_t s)
                     {
-                        std::cout << "done" << std::endl;
+                        //std::cout << "done" << std::endl;
+                        exit(0);
                     });
                 }
                 else
@@ -369,7 +365,8 @@ class session
                     std::shared_ptr<std::string> str = std::make_shared<std::string>(pThis->headers.get_response());
                     asio::async_write(pThis->socket, boost::asio::buffer(str->c_str(), str->length()), [pThis, str](const error_code& e, std::size_t s)
                     {
-                        std::cout << "done" << std::endl;
+                        //std::cout << "done" << std::endl;
+                        exit(0);
                     });
                 }
             }
@@ -420,33 +417,34 @@ public:
     }
 };
 
-void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service, std::vector<std::thread>& Pool)
+void accept_and_run(ip::tcp::acceptor& acceptor, io_service& io_service, std::vector<std::thread>& Pool, int ppid, int children)
 {
     // Make new session instance 
     std::shared_ptr<session> sesh = std::make_shared<session>(io_service);
     // Start listening
-    acceptor.async_accept(sesh->socket, [sesh, &acceptor, &io_service, &Pool](const error_code& accept_error)
+    acceptor.async_accept(sesh->socket, [sesh, &acceptor, &io_service, &Pool, ppid, children](const error_code& accept_error)
     {
         // Continue listening after accepting
-        accept_and_run(acceptor, io_service, Pool);
-
-        if(!accept_error)
-        {
-            //std::cout << Pool.size() << std::endl;
-            //std::cout << std::thread::hardware_concurrency();
-            
-            /*
-            if(Pool.size() == 1){
-                if(Pool.back().joinable()) {
-                    Pool.back().join();
-                }
-                Pool.pop_back();
+        int new_children = children;
+        int status;
+        if(children > 1000 && getpid() == ppid) {
+            wait(&status);
+            new_children--;
+        }
+        io_service.notify_fork(boost::asio::io_service::fork_prepare);
+        int pid = fork();
+        if(pid == -1) {
+        }
+        else if(pid==0) {
+            if(!accept_error)
+            {
+                io_service.notify_fork(boost::asio::io_service::fork_child);
+                session::interact(sesh);
             }
-            */
-            std::thread thread{[&sesh](){session::interact(sesh);}};
-            //Pool.push_back(std::move(thread));
-            thread.join();
-            //session::interact(sesh);
+        }
+        else if(pid>0 && getpid() == ppid) {
+                //io_service.notify_fork(boost::asio::io_service::fork_parent);
+            accept_and_run(acceptor, io_service, Pool, ppid, new_children+1);
         }
     });
 }
@@ -460,7 +458,7 @@ int main(int argc, const char * argv[])
     ip::tcp::acceptor acceptor{io_service, endpoint};
 
     acceptor.listen();
-    accept_and_run(acceptor, io_service, Pool);
+    accept_and_run(acceptor, io_service, Pool, getpid(), 0);
 
     io_service.run();
     for (auto& t : Pool) t.join();
