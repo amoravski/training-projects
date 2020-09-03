@@ -111,6 +111,8 @@ public:
                 }
                 for(auto i = body_params.begin(); i!=body_params.end(); i++)
                 {
+                    std::cout << i->first << std::endl;
+                    std::cout << i->second << std::endl;
                     env[i->first] = i->second;
                 }
                 
@@ -300,7 +302,7 @@ public:
                 readingHeaders=!readingHeaders;
             }
             else if(readingHeaders == false) {
-                value += current;
+                value += current.substr(0, current.length()-1);
             }
             else if(readingHeaders == true) {
                 name = current.substr(current.find("\"")+1);
