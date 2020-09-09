@@ -2,6 +2,7 @@ import itertools
 import numpy
 import math
 
+
 def traverse(u, visited, graph):
     visited[u] = True
     for v in range(N):
@@ -9,18 +10,16 @@ def traverse(u, visited, graph):
             if not visited[v]:
                 traverse(v, visited, graph)
 
+
 def isConnected(N, graph):
     vis = numpy.zeros(N);
     for u in range(N):
         for i in range(N):
             vis[i] = False
             traverse(u, vis, graph)
-            print(vis)
-        for i in range(N):
-            if not vis[i]:
-                print(vis)
-                print("ending")
-                return False
+    for i in range(N):
+        if not vis[i]:
+            return False
     return True
 
 
@@ -37,9 +36,9 @@ def calculate_min_max_speed(N, roads):
                 graph[filtered_road[0]-1][filtered_road[1]-1]=1
                 graph[filtered_road[1]-1][filtered_road[0]-1]=1
             if isConnected(N,graph):
-                print(min_difference)
                 return (road[0], road[0]+min_difference)
         min_difference+=1
+
 
 try:
     rows = []
@@ -76,6 +75,5 @@ else:
         else:
             roads.append(rows[0])
             tr+=1
-
     if execute:
         print(calculate_min_max_speed(N, roads))
