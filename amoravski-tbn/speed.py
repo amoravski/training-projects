@@ -1,45 +1,103 @@
 import itertools
 import numpy
 import math
-
-
-def traverse(u, visited, graph):
-    visited[u] = True
-    for v in range(N):
-        if graph[u][v]!=0:
-            if not visited[v]:
-                traverse(v, visited, graph)
-
-
-def isConnected(N, graph):
-    vis = numpy.zeros(N);
-    for u in range(N):
-        for i in range(N):
-            vis[i] = False
-            traverse(u, vis, graph)
-    for i in range(N):
-        if not vis[i]:
-            return False
-    return True
-
+import copy
 
 def calculate_min_max_speed(N, roads):
-    roads_sorted = sorted(roads, key= lambda tup: tup[0])
-    min_difference=0
-    while(True):
-        for index, road in enumerate(roads):
-            roads_filtered = [ sorted([new_road[1], new_road[2]]) for new_road in roads if new_road[0] >= road[0] and new_road[0]-road[0]<=min_difference]
-            graph=numpy.zeros((N,N))
-            for n in range(N):
-                graph[n][n]=1
-            for filtered_road in roads_filtered:
-                graph[filtered_road[0]-1][filtered_road[1]-1]=1
-                graph[filtered_road[1]-1][filtered_road[0]-1]=1
-            if isConnected(N,graph):
-                return (road[0], road[0]+min_difference)
-        min_difference+=1
+    # make adjecency matrix
+    adj = numpy.zeros((int(N),int(N)))
+    for road in roads:
+        adj[road[1]-1,road[2]-1] += 1
+        adj[road[2]-1,road[1]-1] += 1
+    #print(adj)
+    paths_all = []
+    for i in range(1,N):
+        paths = []
+        printAllPathsUtil(adj,0,i,[False]*N, [], paths)
+        paths_all.append(paths)
+    #print(paths_all)
+    path_speeds_all = []
+    for paths in paths_all:
+        path_speeds_path = []
+        for path in paths:
+            path_speeds = []
+            for index in range(len(path)-1):
+                path_s = -1
+                for road in roads:
+                    if (road[1]-1==path[index] and road[2]-1==path[index+1]) or (road[2]-1==path[index] and road[1]-1==path[index+1]):
+                        path_s=road[0]
+                path_speeds.append(path_s)
+            path_speeds_path.append(copy.deepcopy(path_speeds))
+        path_speeds_all.append(copy.deepcopy(path_speeds_path))
+    # We have all paths from 1 to other nodes, uniquely identifying speeds
+    #print(path_speeds_all)
+    min_max_speed(path_speeds_all)
+
+def min_max_speed(path_speeds):
+    possibilities = []
+    for paths in path_speeds:
+        p = []
+        for path in paths:
+            s_min=path[0]
+            s_max=path[0]
+            for speed in path:
+                if s_min >= speed:
+                    s_min = speed
+                if s_max <= speed:
+                    s_max = speed
+            p.append([s_min,s_max])
+        possibilities.append(p)
+    #print(possibilities)
+    difference = 0
+    flag = False
+    min_speed = possibilities[0][0][0]
+    min_speed = possibilities[0][0][1]
+    # contains
+    for speeds in possibilities:
+        for index, speed in enumerate(speeds):
+            for index1, speed1 in enumerate(speeds):
+                if speed[0]>=speed1[0] and speed[1]<=speed1[1] and (speed[1]-speed[0] < speed1[1]-speed1[0]):
+                    del speeds[index1]
+    #print(possibilities)
+    global_min = -1
+    global_max = 0
+    for speeds in possibilities:
+        for speed in speeds:
+            if global_min > speed[0] or global_min == -1:
+                global_min = speed[0]
+            if global_max < speed[1]:
+                global_max = speed[1]
+    global_diff = global_max - global_min
+    for diff in range(global_diff):
+        for i in range(global_min, global_max - diff+1):
+            global_flag = False
+            flag = 0
+            for speeds in possibilities:
+                for speed in speeds:
+                    if speed[0]>=i and speed[1]<=i+diff:
+                        flag+=1
+                        break
+            if flag == len(possibilities):
+                print((i,i+diff))
+                return
 
 
+def printAllPathsUtil(adj, u, d, visited, path, paths): 
+  
+        visited[u]= True
+        path.append(u) 
+  
+        if u == d: 
+            paths.append(copy.deepcopy(path))
+        else: 
+            for i, connected in enumerate(adj[u]): 
+                if connected >= 1:
+                    if visited[i]== False: 
+                        printAllPathsUtil(adj, i, d, visited, path, paths) 
+                      
+        path.pop() 
+        visited[u]= False
+        
 try:
     rows = []
     row = input().split(' ')
@@ -76,4 +134,4 @@ else:
             roads.append(rows[0])
             tr+=1
     if execute:
-        print(calculate_min_max_speed(N, roads))
+        calculate_min_max_speed(N, roads)
